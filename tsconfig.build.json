@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "target": "ES2022",
+    "declaration": true,
+    "sourceMap": true,
+    "strict": true,
+    "noEmitOnError": true,
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true
+  },
+  "exclude": ["node_modules", "build", "**/*.test.ts", "**/tests/**", "**/build/**"]
+}
