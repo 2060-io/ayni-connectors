@@ -55,10 +55,14 @@ export async function userIdOf(http: HttpClient, base: URL, signal?: AbortSignal
   return parts?.length === 1 ? parts[0] : undefined
 }
 
-export async function discoverNextcloud(http: HttpClient, base: URL, signal?: AbortSignal): Promise<NextcloudInfo> {
+export async function discoverNextcloud(
+  http: HttpClient,
+  base: URL,
+  user: Promise<string | undefined> = userIdOf(http, base)
+): Promise<NextcloudInfo> {
   const [userId, caps] = await Promise.all([
-    userIdOf(http, base, signal),
-    ocs<{ capabilities?: Capabilities }>(http, ocsUrl(base, 'cloud/capabilities'), 'GET', undefined, signal),
+    user,
+    ocs<{ capabilities?: Capabilities }>(http, ocsUrl(base, 'cloud/capabilities')),
   ])
   if (!ocsOk(caps)) throw ocsError(caps)
   if (!userId) throw ocsError({ status: 502, statuscode: 502, message: '', data: null })
@@ -67,9 +71,9 @@ export async function discoverNextcloud(http: HttpClient, base: URL, signal?: Ab
   const teamFolders = c.groupfolders !== undefined
   let teamRoots = false
   if (teamFolders && sharing) {
-    const folders = await ocs(http, appUrl(base, 'apps/groupfolders/folders/count'), 'GET', undefined, signal)
+    const folders = await ocs(http, appUrl(base, 'apps/groupfolders/folders/count'))
     if (ocsOk(folders)) {
-      const groups = await ocs(http, ocsUrl(base, 'cloud/groups/admin/subadmins'), 'GET', undefined, signal)
+      const groups = await ocs(http, ocsUrl(base, 'cloud/groups/admin/subadmins'))
       teamRoots = ocsOk(groups)
     }
   }

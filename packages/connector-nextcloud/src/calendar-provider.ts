@@ -9,6 +9,7 @@ import { type CalendarProvider, errors, type ProfileError } from '@ayni.org/ayni
 import type { DavAccountData } from './account.js'
 import { accountOfPrincipal, CalDav, type CalendarAccount, discoverCaldav } from './caldav.js'
 import { statusError } from './dav.js'
+import { davRoot } from './nextcloud.js'
 import { asProfileError, type RequestScope } from './scope.js'
 
 type Provider = CalendarProvider<DavAccountData>
@@ -48,17 +49,20 @@ export async function calendarFor(scope: RequestScope): Promise<Provider | undef
     let probe: URL
     let find: (signal?: AbortSignal) => Promise<CalendarAccount>
     if (target.kind === 'nextcloud') {
-      const nc = await scope.nextcloud(target.base)
-      const user = encodeURIComponent(nc.userId)
-      const principal = new URL(`principals/users/${user}/`, nc.dav)
-      probe = new URL(`calendars/${user}/`, nc.dav)
+      // Calendar needs the user id alone, not the capabilities of Files
+      const uid = await scope.nextcloudUser(target.base)
+      if (!uid) throw errors.unavailable('The server names no account of the request.')
+      const dav = davRoot(target.base)
+      const user = encodeURIComponent(uid)
+      const principal = new URL(`principals/users/${user}/`, dav)
+      probe = new URL(`calendars/${user}/`, dav)
       find = (signal) => accountOfPrincipal(http, principal, signal)
     } else {
       probe = target.address
       find = (signal) => discoverCaldav(http, target.address, signal)
     }
     let found: Promise<CalendarAccount> | undefined
-    const options = await http.send({ method: 'OPTIONS', url: probe })
+    const options = await scope.optionsOf(probe)
     if (options.status === 401) throw statusError(options)
     let features = davFeatures(options.headers.dav)
     if (!features.has('calendar-access')) {
