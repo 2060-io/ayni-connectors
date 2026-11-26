@@ -9,10 +9,12 @@ import { errors } from '@ayni.org/ayni-provider-kit'
 // biome-ignore lint/suspicious/noControlCharactersInRegex: control characters are what this refuses
 const CONTROL = /[\u0000-\u001f\u007f-\u009f]/
 
-/** The parts of a reference, or `invalid-argument` naming the argument. */
+/**
+ * The parts of a reference: `invalid-argument` naming the argument for a part `.`, `..`, empty or with a control
+ * character (FEAT-WEBDAV-002); a reference that is no path at all names nothing (`not-found`).
+ */
 export function refParts(ref: string, field: string): string[] {
-  if (typeof ref !== 'string' || !ref.startsWith('/'))
-    throw errors.invalidArgument(field, `"${field}" is not a reference this server gave.`)
+  if (typeof ref !== 'string' || !ref.startsWith('/')) throw errors.notFound()
   if (ref === '/') return []
   const parts = ref.slice(1).split('/')
   for (const p of parts)
