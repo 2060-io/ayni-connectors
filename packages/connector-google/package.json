@@ -39,6 +39,7 @@
     "@ayni.org/ayni-provider-kit": "workspace:^"
   },
   "devDependencies": {
-    "@ayni.org/ayni-conformance": "workspace:^"
+    "@ayni.org/ayni-conformance": "workspace:^",
+    "@modelcontextprotocol/client": "catalog:"
   }
 }

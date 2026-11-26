@@ -224,6 +224,9 @@ importers:
       '@ayni.org/ayni-conformance':
         specifier: workspace:^
         version: link:../conformance
+      '@modelcontextprotocol/client':
+        specifier: 'catalog:'
+        version: 2.4.0
 
   packages/feature-profiles:
     dependencies:
