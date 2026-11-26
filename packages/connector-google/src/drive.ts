@@ -891,8 +891,12 @@ export function driveProvider(
           })
         return { items: data.revisions ?? [], ...(data.nextPageToken ? { next: data.nextPageToken } : {}) }
       })
-      // Drive lists revisions oldest first; the profile, newest first (files §4.5)
-      const entries: VersionEntry[] = revisions.reverse().map((r) => {
+      // newest first (files §4.5): Drive's reference does not say in which order it lists revisions
+      const ordered = revisions
+        .map((r, i) => ({ r, i, at: Date.parse(r.modifiedTime ?? '') }))
+        .sort((x, y) => (Number.isNaN(y.at) ? 0 : y.at) - (Number.isNaN(x.at) ? 0 : x.at) || y.i - x.i)
+        .map((x) => x.r)
+      const entries: VersionEntry[] = ordered.map((r) => {
         const by = nameToShow(r.lastModifyingUser?.displayName)
         return {
           version: r.id,
