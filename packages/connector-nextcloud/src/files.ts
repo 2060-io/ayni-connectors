@@ -452,14 +452,16 @@ export class DavFiles {
 
   /**
    * A write, waited for while the server holds the item's lock for another request: Nextcloud answers `423 Locked`
-   * to a second write of a file being written (seen on Nextcloud 35), and the precondition then decides. Five tries
-   * within some three seconds, then the `423` is answered as providers §3 says (`unavailable`).
+   * to a second write of a file being written, and to both of two writes that took the lock together (seen on Nextcloud
+   * 35), and the precondition then decides. Five tries within some three seconds, each after a wait of its own so that
+   * two writes do not meet again, then the `423` is answered as providers §3 says (`unavailable`).
    */
   private async write(req: DavRequest, signal?: AbortSignal): Promise<DavResponse> {
     for (let attempt = 0; ; attempt++) {
       const res = await this.s.http.send(req, signal)
       if (res.status !== 423 || attempt >= 5) return res
-      await new Promise((resolve) => setTimeout(resolve, 100 * 2 ** attempt))
+      const wait = 50 * 2 ** attempt
+      await new Promise((resolve) => setTimeout(resolve, wait + Math.floor(Math.random() * wait * 2)))
     }
   }
 
@@ -825,11 +827,13 @@ export class DavFiles {
     const parent = await this.maybeAt(t.place.slice(0, -1), ctx.signal)
     if (!parent || !isFolder(parent)) throw errors.notFound('The folder the item left is gone.')
     if (await this.maybeAt(t.place, ctx.signal)) throw errors.alreadyExists('The folder the item left holds its name.')
-    const res = await this.s.http.send(
+    // no Overwrite: F, which Nextcloud answers 412 for the restore collection (seen on Nextcloud 35); the place was
+    // looked at above
+    const res = await this.write(
       {
         method: 'MOVE',
         url: this.trashUrl('trash', t.name),
-        headers: { destination: this.trashUrl('restore', t.name).toString(), overwrite: 'F' },
+        headers: { destination: this.trashUrl('restore', t.name).toString() },
       },
       ctx.signal
     )
