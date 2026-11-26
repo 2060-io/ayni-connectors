@@ -21,6 +21,7 @@ authority; this repository follows it, and the tests pin the code to what the sp
 | [`packages/provider-kit`](packages/provider-kit) | `@ayni.org/ayni-provider-kit` | what every connector shares: the MCP server (Streamable HTTP), the declaration, validation of calls and results, errors, pages and cursors, accounts |
 | [`packages/conformance`](packages/conformance) | `@ayni.org/ayni-conformance` | the spec's *Verify* lines as a test kit against any provider's MCP endpoint, from a test runner or the CLI `ayni-conformance`, reported per requirement id |
 | [`packages/provider-memory`](packages/provider-memory) | private | an in-memory provider of Files 1.0 and Calendar 1.0 with every capability: the conformance kit's reference in CI, and a fake for clients' tests |
+| [`packages/connector-google`](packages/connector-google) | private, image `ayni-connector-google` | Google Drive (Files) and Google Calendar (Calendar) over the Drive API v3 and the Calendar API v3, with the person's own Google access token of each request; the conformance kit passes it over a stub of Google in CI |
 
 ```
 feature-profiles ◄── provider-kit ◄── provider-memory, connector-*
@@ -63,8 +64,9 @@ them as they are, which the kit's tests check with that client, and the conforma
 
 ## Roadmap
 
-The connectors are next, each a package of its own and an image of its own, built on the kit and passing the
-conformance kit against stub services in CI:
+The connectors, each a package of its own and an image of its own, built on the kit and passing the conformance kit
+against stub services in CI. The Google connector is built ([`packages/connector-google`](packages/connector-google));
+the Nextcloud connector is next:
 
 | Package | Image | What it is | Spec |
 |---------|-------|-----------|------|
@@ -98,7 +100,7 @@ Not set up yet: each needs settings that only the repository's owner can make.
   with npm trusted publishing (OIDC, `id-token: write`, `pnpm publish --provenance`), on the model of
   `2060-io/credo-ts-ayni-flow`. `provider-memory` and the connectors stay private on npm.
 - **Docker images**: one per connector (`packages/connector-*/Dockerfile`, Node 24, `pnpm deploy --filter` of the
-  connector), built on every pull request and pushed on a release by a workflow on the model of the template's
+  connector; the Google connector's exists and builds), built on every pull request and pushed on a release by a workflow on the model of the template's
   `cd.yml` (`resolve-version-call`, tags `X.Y.Z`, `vX.Y`, `latest`, `dev`), gated on the repository variable
   `CD_ENABLED`; a Helm chart per connector (named `<image>-chart`) once `2060-io/ayni-deploy` takes them.
 
