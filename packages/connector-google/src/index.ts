@@ -3,6 +3,7 @@
  * the Google Calendar API v3 (providers §6), with the person's own Google access token of each request in
  * `Authorization: Bearer` (common §11, TOOL-OAUTH-018).
  */
+export { driveProvider, FILES_DECLARATION, type GoogleAccount, WRITE_BYTES } from './drive.js'
 export {
   GOOGLE_API_HOST,
   GOOGLE_AUTHORIZATION_SERVER,
