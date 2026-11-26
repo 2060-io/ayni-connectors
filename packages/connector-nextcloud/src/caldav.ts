@@ -524,7 +524,14 @@ export class CalDav {
     }
   }
 
-  private attendeeProps(list: InviteeInput[], notify: boolean): Property[] {
+  /**
+   * The attendee lines of a creation or a change. `notify: false` asks the server to schedule nothing for a person
+   * (providers §4): `SCHEDULE-AGENT=CLIENT`, for which RFC 6638 §7.1 has the server send nothing. The spec names NONE,
+   * which Sabre, Nextcloud's CalDAV, ignores (it schedules a NONE attendee as any other, seen on Nextcloud 35); CLIENT
+   * is the value both read so. A person the server already invites (`scheduled`) keeps the server's scheduling: on
+   * Sabre, a change of such a person to CLIENT sends them a cancellation.
+   */
+  private attendeeProps(list: InviteeInput[], notify: boolean, scheduled: Set<string> = new Set()): Property[] {
     return list.map((a) => {
       const params: Param[] = [
         { name: 'CUTYPE', values: ['INDIVIDUAL'] },
@@ -533,8 +540,8 @@ export class CalDav {
         { name: 'RSVP', values: ['TRUE'] },
       ]
       if (a.name) params.push({ name: 'CN', values: [a.name] })
-      // notify false: the server sends nothing to this person (RFC 6638 §7.1, providers §4)
-      if (!notify) params.push({ name: 'SCHEDULE-AGENT', values: ['NONE'] })
+      if (!notify && !scheduled.has(a.address.toLowerCase()))
+        params.push({ name: 'SCHEDULE-AGENT', values: ['CLIENT'] })
       return { name: 'ATTENDEE', params, value: `mailto:${a.address}` }
     })
   }
@@ -697,14 +704,22 @@ export class CalDav {
         else setProp(c, 'LOCATION', escapeText(args.place))
       }
       if (args.busy !== undefined) setProp(c, 'TRANSP', args.busy ? 'OPAQUE' : 'TRANSPARENT')
+      // the people the server schedules already: a notify false leaves them to it (see attendeeProps)
+      const scheduled = new Set(
+        getProps(c, 'ATTENDEE')
+          .filter((a) => (paramOf(a, 'SCHEDULE-AGENT') ?? 'SERVER').toUpperCase() !== 'CLIENT')
+          .map((a) => addressOf(a.value)?.toLowerCase())
+          .filter((x): x is string => !!x)
+      )
       if (args.attendees !== undefined) {
         removeProps(c, 'ATTENDEE')
         if (args.attendees.length) {
           if (!getProp(c, 'ORGANIZER')) c.props.push(this.organizerOf(account))
-          c.props.push(...this.attendeeProps(args.attendees, args.notify !== false))
+          c.props.push(...this.attendeeProps(args.attendees, args.notify !== false, scheduled))
         } else removeProps(c, 'ORGANIZER')
-      } else if (args.notify !== undefined)
-        for (const a of getProps(c, 'ATTENDEE')) setParam(a, 'SCHEDULE-AGENT', args.notify ? undefined : 'NONE')
+      } else if (args.notify === true)
+        // the people not invited before are now: the server sends them the event
+        for (const a of getProps(c, 'ATTENDEE')) setParam(a, 'SCHEDULE-AGENT', undefined)
       if (withTimes) this.changeTimes(c, args, times, delta, () => (significant = true))
       const s = getProp(c, 'SEQUENCE')
       if (significant || (withTimes && (args.start !== undefined || args.timeZone !== undefined)))
@@ -782,29 +797,16 @@ export class CalDav {
     const account = await this.s.account(ctx.signal)
     const { er, stored, master } = await this.loadFor(cal, args.ref, ctx.signal)
     const vcal = stored.vcal
-    let ifMatch = this.ifMatch(args.ifVersion, stored)
+    const ifMatch = this.ifMatch(args.ifVersion, stored)
     const target = er.rid ? findOccurrence(vcal, cal.zone, er.rid.ms) : undefined
     if (er.rid && !target) throw errors.notFound()
     const base = target?.component ?? master
     if (!base) throw errors.notFound()
     if (!isMine(base, account.addresses))
       throw errors.permissionDenied('Only an event the account organizes can be cancelled.')
+    // notify false: those the server never invited (CLIENT) are told nothing; those it invited it tells, whatever the
+    // client asks: on Sabre, marking them CLIENT before would itself send them a cancellation (seen on Nextcloud 35)
     const one = er.rid && (args.scope ?? 'this') === 'this' && master && target
-    if (args.notify === false) {
-      // nobody is told: the server is asked to schedule for nobody before the change (RFC 6638 §7.1)
-      let marked = false
-      for (const ev of vcal.components.filter((c) => c.name === 'VEVENT'))
-        for (const a of getProps(ev, 'ATTENDEE')) {
-          setParam(a, 'SCHEDULE-AGENT', 'NONE')
-          marked = true
-        }
-      if (marked) {
-        const res = await this.write(er.url, vcal, { 'if-match': ifMatch }, ctx.signal)
-        if (![200, 201, 204].includes(res.status))
-          throw await this.writeError(res, async () => (await this.load(er.url, ctx.signal)).etag)
-        ifMatch = (await this.load(er.url, ctx.signal)).etag
-      }
-    }
     if (one && master && target) {
       const zoneOf = zoneResolver(vcal, cal.zone)
       const ex = this.seriesTime('EXDATE', master, target.rid, zoneOf)
