@@ -82,16 +82,24 @@ export async function googleErrorOf(res: Response): Promise<GoogleError> {
 
 /**
  * The profile's error for an answer of Google, where the call gives it no meaning of its own (common §9): `401`
- * `account-refused`; a missing scope `permission-denied`; a limit `rate-limited`; another `403` `permission-denied`;
+ * `account-refused`, and a missing scope `permission-denied`, each marked for the HTTP layer; a limit `rate-limited`; another `403` `permission-denied`;
  * `404` and `410` `not-found`; `5xx`, a failed connection or anything else `unavailable`. No message holds Google's
  * text, an address or a name.
  */
 export function profileErrorOf(e: unknown): ProfileError {
   if (e instanceof ProfileError) return e
   if (!(e instanceof GoogleError)) return errors.unavailable()
-  if (e.status === 401) return errors.accountRefused('Google refuses the access token of the request.')
+  // both marked for the HTTP layer, which answers them 401 and 403 with their challenge (challenge.ts)
+  if (e.status === 401)
+    return new ProfileError('account-refused', 'Google refuses the access token of the request.', {
+      x_tokenRefused: true,
+    })
   if (e.insufficientScope)
-    return errors.permissionDenied('The Google access token of the request does not grant the access this tool needs.')
+    return new ProfileError(
+      'permission-denied',
+      'The Google access token of the request does not grant the access this tool needs.',
+      { x_insufficientScope: true }
+    )
   if (e.status === 429 || (e.status === 403 && e.reason && RATE_REASONS.has(e.reason)))
     return errors.rateLimited(e.retryAfterSeconds, 'Google asks to wait before the next request.')
   if (e.status === 403) return errors.permissionDenied('Google does not let the account do this.')

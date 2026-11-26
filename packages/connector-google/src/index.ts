@@ -17,11 +17,13 @@ import {
   silentLogger,
 } from '@ayni.org/ayni-provider-kit'
 import { calendarProvider } from './calendar.js'
+import { withHttpChallenges, withToolScopes } from './challenge.js'
 import { driveProvider, type GoogleAccount } from './drive.js'
 import { GOOGLE_AUTHORIZATION_SERVER, type GoogleEndpoints, resolveEndpoints } from './endpoints.js'
 import { GoogleClient } from './google.js'
 
 export { CALENDAR_DECLARATION } from './calendar.js'
+export { TOOL_SCOPES } from './challenge.js'
 export { FILES_DECLARATION, type GoogleAccount, WRITE_BYTES } from './drive.js'
 export {
   GOOGLE_API_HOST,
@@ -75,9 +77,9 @@ export function createGoogleConnector(options: GoogleConnectorOptions = {}): Goo
   const fetchFn = options.fetch ?? fetch
   const client = (ctx: { account: { data: GoogleAccount }; signal: AbortSignal; logger: Logger }) =>
     new GoogleClient(ctx.account.data.token, endpoints, fetchFn, ctx.signal, ctx.logger)
-  const files = options.files === false ? undefined : driveProvider(client)
-  const calendar = options.calendar === false ? undefined : calendarProvider(client)
-  const handler = createProviderHandler<GoogleAccount>({
+  const files = options.files === false ? undefined : withToolScopes(driveProvider(client), 'files_')
+  const calendar = options.calendar === false ? undefined : withToolScopes(calendarProvider(client), 'calendar_')
+  const kit = createProviderHandler<GoogleAccount>({
     name: NAME,
     version: VERSION,
     // the person's Google access token, used for the call that carries it and kept no longer (TOOL-OAUTH-018)
@@ -89,6 +91,10 @@ export function createGoogleConnector(options: GoogleConnectorOptions = {}): Goo
     instructions:
       'Files over Google Drive and Calendar over Google Calendar, with the Google account of the access token of each request.',
   })
+  // a call refused for its token or for a missing scope is answered 401 or 403 at the level of HTTP (challenge.ts)
+  const handler = withHttpChallenges(kit, (request) =>
+    new URL('/.well-known/oauth-protected-resource/mcp', request.url).toString()
+  )
   const protectedResource: ProtectedResourceMetadata = {
     resource: options.resourceUrl ?? '',
     authorization_servers: [GOOGLE_AUTHORIZATION_SERVER],
