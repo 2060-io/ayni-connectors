@@ -82,6 +82,16 @@
           }
         }
       }
+    },
+    {
+      "includes": ["packages/feature-profiles/src/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noThenProperty": "off"
+          }
+        }
+      }
     }
   ]
 }

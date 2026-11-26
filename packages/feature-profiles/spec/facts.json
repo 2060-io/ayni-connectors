@@ -1,0 +1,1161 @@
+{
+  "source": {
+    "repository": "https://github.com/2060-io/ayni-spec",
+    "path": "v4/ayni-feature-profiles",
+    "commit": "f85c13659fea23388c875ec1e23be7f5b6891e0e"
+  },
+  "common": {
+    "errors": [
+      {
+        "code": "invalid-argument",
+        "members": "`field`, the argument's name"
+      },
+      {
+        "code": "not-supported",
+        "members": "`field` when an argument is the cause"
+      },
+      {
+        "code": "not-found",
+        "members": ""
+      },
+      {
+        "code": "outside-location",
+        "members": ""
+      },
+      {
+        "code": "already-exists",
+        "members": ""
+      },
+      {
+        "code": "version-mismatch",
+        "members": "`currentVersion`"
+      },
+      {
+        "code": "too-large",
+        "members": "`limitBytes`, and `sizeBytes` when known"
+      },
+      {
+        "code": "permission-denied",
+        "members": ""
+      },
+      {
+        "code": "account-refused",
+        "members": ""
+      },
+      {
+        "code": "rate-limited",
+        "members": "`retryAfterSeconds` when known"
+      },
+      {
+        "code": "unavailable",
+        "members": ""
+      },
+      {
+        "code": "bad-cursor",
+        "members": ""
+      }
+    ],
+    "limits": [
+      {
+        "member": "page",
+        "default": "100",
+        "least": "20"
+      },
+      {
+        "member": "readBytes",
+        "default": "10 MiB",
+        "least": "1 MiB"
+      },
+      {
+        "member": "writeBytes",
+        "default": "10 MiB",
+        "least": "1 MiB"
+      }
+    ],
+    "requirementIds": [
+      "FEAT-CORE-001",
+      "FEAT-CORE-002",
+      "FEAT-CORE-003",
+      "FEAT-CORE-004",
+      "FEAT-CORE-005",
+      "FEAT-CORE-006",
+      "FEAT-CORE-007",
+      "FEAT-CORE-008",
+      "FEAT-CORE-009",
+      "FEAT-CORE-010",
+      "FEAT-CORE-011",
+      "FEAT-CORE-012",
+      "FEAT-CORE-013",
+      "FEAT-CORE-014",
+      "FEAT-CORE-015",
+      "FEAT-CORE-016",
+      "FEAT-CORE-017",
+      "FEAT-CORE-018",
+      "FEAT-CORE-019",
+      "FEAT-CORE-020",
+      "FEAT-CORE-021",
+      "FEAT-CORE-022",
+      "FEAT-CORE-023",
+      "FEAT-CORE-024",
+      "FEAT-CORE-025",
+      "FEAT-CORE-026"
+    ]
+  },
+  "files": {
+    "header": {
+      "id": "org.ayni/files",
+      "version": "1.0",
+      "prefix": "files_",
+      "location": "root",
+      "labels": ["Folder", "Folders", "Any folder you can reach"]
+    },
+    "tools": [
+      {
+        "name": "files_roots",
+        "title": "List folders to work in",
+        "effect": "read",
+        "external": false,
+        "mark": "names"
+      },
+      {
+        "name": "files_list",
+        "title": "List a folder",
+        "effect": "read",
+        "external": false,
+        "mark": "names"
+      },
+      {
+        "name": "files_get",
+        "title": "Look at a file or a folder",
+        "effect": "read",
+        "external": false,
+        "mark": "names"
+      },
+      {
+        "name": "files_read",
+        "title": "Read a file",
+        "effect": "read",
+        "external": false,
+        "mark": "names and content"
+      },
+      {
+        "name": "files_create",
+        "title": "Create a file",
+        "effect": "write",
+        "external": false,
+        "mark": "names"
+      },
+      {
+        "name": "files_replace",
+        "title": "Replace a file's content",
+        "effect": "write",
+        "external": false,
+        "mark": "names"
+      },
+      {
+        "name": "files_search",
+        "title": "Search files",
+        "effect": "read",
+        "external": false,
+        "mark": "names and content"
+      },
+      {
+        "name": "files_create_folder",
+        "title": "Create a folder",
+        "effect": "write",
+        "external": false,
+        "mark": "names"
+      },
+      {
+        "name": "files_move",
+        "title": "Move or rename",
+        "effect": "write",
+        "external": false,
+        "mark": "names"
+      },
+      {
+        "name": "files_trash",
+        "title": "Move to the trash",
+        "effect": "delete",
+        "external": false,
+        "mark": "names"
+      },
+      {
+        "name": "files_restore",
+        "title": "Restore from the trash",
+        "effect": "write",
+        "external": false,
+        "mark": "names"
+      },
+      {
+        "name": "files_list_trash",
+        "title": "List the trash",
+        "effect": "read",
+        "external": false,
+        "mark": "names"
+      },
+      {
+        "name": "files_shares",
+        "title": "See who a file is shared with",
+        "effect": "read",
+        "external": false,
+        "mark": "names"
+      },
+      {
+        "name": "files_share",
+        "title": "Share",
+        "effect": "write",
+        "external": true,
+        "mark": "names"
+      },
+      {
+        "name": "files_unshare",
+        "title": "Stop sharing",
+        "effect": "write",
+        "external": false,
+        "mark": "names"
+      },
+      {
+        "name": "files_versions",
+        "title": "List a file's versions",
+        "effect": "read",
+        "external": false,
+        "mark": "names"
+      },
+      {
+        "name": "files_export",
+        "title": "Read a file in another format",
+        "effect": "read",
+        "external": false,
+        "mark": "names and content"
+      },
+      {
+        "name": "files_create_team_root",
+        "title": "Create a team's folder",
+        "effect": "write",
+        "external": false,
+        "mark": "no"
+      },
+      {
+        "name": "files_rename_root",
+        "title": "Rename a team's folder",
+        "effect": "write",
+        "external": false,
+        "mark": "no"
+      }
+    ],
+    "descriptions": {
+      "files_roots": "List the folders you can work in. Give the start of a path to narrow the list.",
+      "files_list": "List what a folder holds, one level only, without the content of its files. With no folder, list the top of the folder you work in.",
+      "files_get": "Look at one file or folder: its name, path, type, size, version and dates, without its content.",
+      "files_read": "Read a file's content: a text file, or a document of the store's own, as text; any other file as its bytes. Give maxBytes to read only the start of a long text.",
+      "files_create": "Create a new file with its content in a folder. Nothing is written if an item of that name is already there, and no folder is created on the way.",
+      "files_replace": "Replace the whole content of an existing file. Give the version you read: if the file changed since, nothing is written and the current version comes back.",
+      "files_search": "Find files and folders by words in their name, their content, or either. Plain words only: no search operators.",
+      "files_create_folder": "Create a folder inside a folder.",
+      "files_move": "Move a file or a folder to another folder, rename it, or both. A folder moves with what it holds. The item's reference changes: use the one this answers.",
+      "files_trash": "Move a file or a folder to the trash. It can be restored for as long as the store keeps its trash.",
+      "files_restore": "Bring an item back from the trash to the folder it left.",
+      "files_list_trash": "List the items in the trash that came from the folder you work in.",
+      "files_shares": "See who a file or a folder is shared with, and how.",
+      "files_share": "Share a file or a folder with people, by their email addresses, or with an audience, as a reader or an editor.",
+      "files_unshare": "Stop one share of a file or a folder.",
+      "files_versions": "List the former versions of a file, newest first. Read one by giving its version to the read of the file.",
+      "files_export": "Read a file converted to another format, one of the formats the file lists.",
+      "files_create_team_root": "Create a folder that belongs to the organization, for a team.",
+      "files_rename_root": "Rename a team's folder."
+    },
+    "arguments": {
+      "files_roots": [
+        {
+          "name": "query",
+          "title": "Path begins with",
+          "presence": "optional"
+        },
+        {
+          "name": "limit",
+          "title": "Most results",
+          "presence": "optional"
+        },
+        {
+          "name": "cursor",
+          "title": "Next page",
+          "presence": "optional"
+        }
+      ],
+      "files_list": [
+        {
+          "name": "root",
+          "title": "Folder",
+          "presence": "required"
+        },
+        {
+          "name": "folder",
+          "title": "Folder to list",
+          "presence": "optional"
+        },
+        {
+          "name": "limit",
+          "title": "Most results",
+          "presence": "optional"
+        },
+        {
+          "name": "cursor",
+          "title": "Next page",
+          "presence": "optional"
+        }
+      ],
+      "files_get": [
+        {
+          "name": "root",
+          "title": "Folder",
+          "presence": "required"
+        },
+        {
+          "name": "ref",
+          "title": "Item",
+          "presence": "required"
+        }
+      ],
+      "files_read": [
+        {
+          "name": "root",
+          "title": "Folder",
+          "presence": "required"
+        },
+        {
+          "name": "ref",
+          "title": "File",
+          "presence": "required"
+        },
+        {
+          "name": "maxBytes",
+          "title": "Most bytes of text",
+          "presence": "optional"
+        }
+      ],
+      "files_create": [
+        {
+          "name": "root",
+          "title": "Folder",
+          "presence": "required"
+        },
+        {
+          "name": "folder",
+          "title": "In folder",
+          "presence": "optional"
+        },
+        {
+          "name": "name",
+          "title": "Name",
+          "presence": "required"
+        },
+        {
+          "name": "content",
+          "title": "Content",
+          "presence": "required"
+        },
+        {
+          "name": "mediaType",
+          "title": "Type",
+          "presence": "optional"
+        }
+      ],
+      "files_replace": [
+        {
+          "name": "root",
+          "title": "Folder",
+          "presence": "required"
+        },
+        {
+          "name": "ref",
+          "title": "File",
+          "presence": "required"
+        },
+        {
+          "name": "ifVersion",
+          "title": "Version read",
+          "presence": "required"
+        },
+        {
+          "name": "content",
+          "title": "New content",
+          "presence": "required"
+        },
+        {
+          "name": "mediaType",
+          "title": "Type",
+          "presence": "optional"
+        }
+      ],
+      "files_search": [
+        {
+          "name": "root",
+          "title": "Folder",
+          "presence": "required"
+        },
+        {
+          "name": "query",
+          "title": "Words",
+          "presence": "required"
+        },
+        {
+          "name": "folder",
+          "title": "In folder",
+          "presence": "optional"
+        },
+        {
+          "name": "in",
+          "title": "Search in",
+          "presence": "optional"
+        },
+        {
+          "name": "limit",
+          "title": "Most results",
+          "presence": "optional"
+        },
+        {
+          "name": "cursor",
+          "title": "Next page",
+          "presence": "optional"
+        }
+      ],
+      "files_create_folder": [
+        {
+          "name": "root",
+          "title": "Folder",
+          "presence": "required"
+        },
+        {
+          "name": "folder",
+          "title": "In folder",
+          "presence": "optional"
+        },
+        {
+          "name": "name",
+          "title": "Name",
+          "presence": "required"
+        }
+      ],
+      "files_move": [
+        {
+          "name": "root",
+          "title": "Folder",
+          "presence": "required"
+        },
+        {
+          "name": "ref",
+          "title": "Item",
+          "presence": "required"
+        },
+        {
+          "name": "toFolder",
+          "title": "To folder",
+          "presence": "optional"
+        },
+        {
+          "name": "newName",
+          "title": "New name",
+          "presence": "optional"
+        },
+        {
+          "name": "ifVersion",
+          "title": "Version read",
+          "presence": "optional"
+        }
+      ],
+      "files_trash": [
+        {
+          "name": "root",
+          "title": "Folder",
+          "presence": "required"
+        },
+        {
+          "name": "ref",
+          "title": "Item",
+          "presence": "required"
+        },
+        {
+          "name": "ifVersion",
+          "title": "Version read",
+          "presence": "optional"
+        }
+      ],
+      "files_restore": [
+        {
+          "name": "root",
+          "title": "Folder",
+          "presence": "required"
+        },
+        {
+          "name": "ref",
+          "title": "Item",
+          "presence": "required"
+        }
+      ],
+      "files_list_trash": [
+        {
+          "name": "root",
+          "title": "Folder",
+          "presence": "required"
+        },
+        {
+          "name": "limit",
+          "title": "Most results",
+          "presence": "optional"
+        },
+        {
+          "name": "cursor",
+          "title": "Next page",
+          "presence": "optional"
+        }
+      ],
+      "files_shares": [
+        {
+          "name": "root",
+          "title": "Folder",
+          "presence": "required"
+        },
+        {
+          "name": "ref",
+          "title": "Item",
+          "presence": "required"
+        }
+      ],
+      "files_share": [
+        {
+          "name": "root",
+          "title": "Folder",
+          "presence": "required"
+        },
+        {
+          "name": "ref",
+          "title": "Item",
+          "presence": "required"
+        },
+        {
+          "name": "role",
+          "title": "Role",
+          "presence": "required"
+        },
+        {
+          "name": "recipients",
+          "title": "People",
+          "presence": "one of `recipients` and `audience`"
+        },
+        {
+          "name": "audience",
+          "title": "Audience",
+          "presence": "one of `recipients` and `audience`"
+        },
+        {
+          "name": "notify",
+          "title": "Tell them",
+          "presence": "optional, where the provider declares `notify: true`"
+        },
+        {
+          "name": "message",
+          "title": "Message",
+          "presence": "optional, where the provider declares `notify: true`"
+        }
+      ],
+      "files_unshare": [
+        {
+          "name": "root",
+          "title": "Folder",
+          "presence": "required"
+        },
+        {
+          "name": "ref",
+          "title": "Item",
+          "presence": "required"
+        },
+        {
+          "name": "share",
+          "title": "Share",
+          "presence": "required"
+        }
+      ],
+      "files_versions": [
+        {
+          "name": "root",
+          "title": "Folder",
+          "presence": "required"
+        },
+        {
+          "name": "ref",
+          "title": "File",
+          "presence": "required"
+        },
+        {
+          "name": "limit",
+          "title": "Most results",
+          "presence": "optional"
+        },
+        {
+          "name": "cursor",
+          "title": "Next page",
+          "presence": "optional"
+        }
+      ],
+      "files_export": [
+        {
+          "name": "root",
+          "title": "Folder",
+          "presence": "required"
+        },
+        {
+          "name": "ref",
+          "title": "File",
+          "presence": "required"
+        },
+        {
+          "name": "mediaType",
+          "title": "Format",
+          "presence": "required"
+        }
+      ],
+      "files_create_team_root": [
+        {
+          "name": "name",
+          "title": "Name",
+          "presence": "required"
+        },
+        {
+          "name": "requestId",
+          "title": "Request",
+          "presence": "required"
+        }
+      ],
+      "files_rename_root": [
+        {
+          "name": "root",
+          "title": "Folder",
+          "presence": "required"
+        },
+        {
+          "name": "name",
+          "title": "New name",
+          "presence": "required"
+        }
+      ]
+    },
+    "capabilities": [
+      {
+        "name": "search",
+        "tools": ["files_search"]
+      },
+      {
+        "name": "folders",
+        "tools": ["files_create_folder", "files_move"]
+      },
+      {
+        "name": "trash",
+        "tools": ["files_trash", "files_restore", "files_list_trash"]
+      },
+      {
+        "name": "share",
+        "tools": ["files_shares", "files_share", "files_unshare"]
+      },
+      {
+        "name": "versions",
+        "tools": ["files_versions"]
+      },
+      {
+        "name": "export",
+        "tools": ["files_export"]
+      },
+      {
+        "name": "team-roots",
+        "tools": ["files_create_team_root", "files_rename_root"]
+      }
+    ],
+    "errorsInProse": {
+      "files_list": ["not-found", "not-supported", "folder"],
+      "files_get": ["not-found"],
+      "files_create": ["already-exists", "not-found", "invalid-argument", "too-large", "permission-denied"],
+      "files_replace": ["version-mismatch", "not-found", "not-supported", "too-large", "permission-denied"],
+      "files_create_folder": ["already-exists", "not-found", "invalid-argument"],
+      "files_restore": ["already-exists", "not-found"],
+      "files_create_team_root": ["permission-denied", "invalid-argument"]
+    },
+    "requirementIds": [
+      "FEAT-FILES-001",
+      "FEAT-FILES-002",
+      "FEAT-FILES-003",
+      "FEAT-FILES-004",
+      "FEAT-FILES-005",
+      "FEAT-FILES-006",
+      "FEAT-FILES-007",
+      "FEAT-FILES-008",
+      "FEAT-FILES-009",
+      "FEAT-FILES-010",
+      "FEAT-FILES-011",
+      "FEAT-FILES-012",
+      "FEAT-FILES-013",
+      "FEAT-FILES-014",
+      "FEAT-FILES-015",
+      "FEAT-FILES-016",
+      "FEAT-FILES-017",
+      "FEAT-FILES-020",
+      "FEAT-FILES-021",
+      "FEAT-FILES-030",
+      "FEAT-FILES-031",
+      "FEAT-FILES-032",
+      "FEAT-FILES-033",
+      "FEAT-FILES-040",
+      "FEAT-FILES-041",
+      "FEAT-FILES-042",
+      "FEAT-FILES-050",
+      "FEAT-FILES-051",
+      "FEAT-FILES-052",
+      "FEAT-FILES-053",
+      "FEAT-FILES-054",
+      "FEAT-FILES-055",
+      "FEAT-FILES-060",
+      "FEAT-FILES-061",
+      "FEAT-FILES-062",
+      "FEAT-FILES-063",
+      "FEAT-FILES-070",
+      "FEAT-FILES-071",
+      "FEAT-FILES-072",
+      "FEAT-FILES-073",
+      "FEAT-FILES-074"
+    ],
+    "recipientRefusedReasons": ["no-account", "not-allowed", "too-many"]
+  },
+  "calendar": {
+    "header": {
+      "id": "org.ayni/calendar",
+      "version": "1.0",
+      "prefix": "calendar_",
+      "location": "calendar",
+      "labels": ["Calendar", "Calendars", "Any calendar you can reach"]
+    },
+    "tools": [
+      {
+        "name": "calendar_calendars",
+        "title": "List calendars",
+        "effect": "read",
+        "external": false,
+        "mark": "names"
+      },
+      {
+        "name": "calendar_list_events",
+        "title": "List events",
+        "effect": "read",
+        "external": false,
+        "mark": "names and content"
+      },
+      {
+        "name": "calendar_get_event",
+        "title": "Look at an event",
+        "effect": "read",
+        "external": false,
+        "mark": "names and content"
+      },
+      {
+        "name": "calendar_create_event",
+        "title": "Add an event",
+        "effect": "write",
+        "external": true,
+        "mark": "names"
+      },
+      {
+        "name": "calendar_update_event",
+        "title": "Change an event",
+        "effect": "write",
+        "external": true,
+        "mark": "names"
+      },
+      {
+        "name": "calendar_cancel_event",
+        "title": "Cancel an event",
+        "effect": "delete",
+        "external": false,
+        "mark": "no"
+      },
+      {
+        "name": "calendar_free_busy",
+        "title": "See when people are busy",
+        "effect": "read",
+        "external": false,
+        "mark": "no"
+      },
+      {
+        "name": "calendar_respond",
+        "title": "Answer an invitation",
+        "effect": "write",
+        "external": false,
+        "mark": "names and content"
+      }
+    ],
+    "descriptions": {
+      "calendar_calendars": "List the calendars you can use. Give a text to keep those whose title holds it.",
+      "calendar_list_events": "List the events of a calendar between two times, each occurrence of a repeating event on its own. Give a text to keep the events whose title, description or place holds it.",
+      "calendar_get_event": "Look at one event. Given a repeating event's own reference, it answers the series once, with its rule.",
+      "calendar_create_event": "Add an event to a calendar. Give a time zone for an event that repeats.",
+      "calendar_update_event": "Change an event you organize. Only the members you give change; an empty description or place removes it. Give the version you read to change nothing if the event changed since.",
+      "calendar_cancel_event": "Cancel an event you organize. Those invited are told where the calendar sends invitations. A cancelled event cannot be brought back.",
+      "calendar_free_busy": "See when a calendar, and other people, are busy between two times, without anything of their events.",
+      "calendar_respond": "Answer an invitation to an event you are invited to: accept, maybe, or decline."
+    },
+    "arguments": {
+      "calendar_calendars": [
+        {
+          "name": "query",
+          "title": "Title holds",
+          "presence": "optional"
+        },
+        {
+          "name": "limit",
+          "title": "Most results",
+          "presence": "optional"
+        },
+        {
+          "name": "cursor",
+          "title": "Next page",
+          "presence": "optional"
+        }
+      ],
+      "calendar_list_events": [
+        {
+          "name": "calendar",
+          "title": "Calendar",
+          "presence": "required"
+        },
+        {
+          "name": "from",
+          "title": "From",
+          "presence": "required"
+        },
+        {
+          "name": "to",
+          "title": "To",
+          "presence": "required"
+        },
+        {
+          "name": "query",
+          "title": "Text",
+          "presence": "optional"
+        },
+        {
+          "name": "limit",
+          "title": "Most results",
+          "presence": "optional"
+        },
+        {
+          "name": "cursor",
+          "title": "Next page",
+          "presence": "optional"
+        }
+      ],
+      "calendar_get_event": [
+        {
+          "name": "calendar",
+          "title": "Calendar",
+          "presence": "required"
+        },
+        {
+          "name": "ref",
+          "title": "Event",
+          "presence": "required"
+        }
+      ],
+      "calendar_create_event": [
+        {
+          "name": "calendar",
+          "title": "Calendar",
+          "presence": "required"
+        },
+        {
+          "name": "title",
+          "title": "Title",
+          "presence": "required"
+        },
+        {
+          "name": "start",
+          "title": "Starts",
+          "presence": "required"
+        },
+        {
+          "name": "end",
+          "title": "Ends",
+          "presence": "required"
+        },
+        {
+          "name": "allDay",
+          "title": "All day",
+          "presence": "optional"
+        },
+        {
+          "name": "timeZone",
+          "title": "Time zone",
+          "presence": "optional"
+        },
+        {
+          "name": "description",
+          "title": "Description",
+          "presence": "optional"
+        },
+        {
+          "name": "place",
+          "title": "Place",
+          "presence": "optional"
+        },
+        {
+          "name": "busy",
+          "title": "Shows as busy",
+          "presence": "optional"
+        },
+        {
+          "name": "rule",
+          "title": "Repeats",
+          "presence": "capability `recurrence`"
+        },
+        {
+          "name": "attendees",
+          "title": "Invited",
+          "presence": "capability `attendees`"
+        },
+        {
+          "name": "notify",
+          "title": "Send invitations",
+          "presence": "capability `attendees`"
+        },
+        {
+          "name": "meeting",
+          "title": "Online meeting",
+          "presence": "capability `meeting`"
+        }
+      ],
+      "calendar_update_event": [
+        {
+          "name": "calendar",
+          "title": "Calendar",
+          "presence": "required"
+        },
+        {
+          "name": "ref",
+          "title": "Event",
+          "presence": "required"
+        },
+        {
+          "name": "ifVersion",
+          "title": "Version read",
+          "presence": "optional"
+        },
+        {
+          "name": "title",
+          "title": "as in §3.4",
+          "presence": "optional"
+        },
+        {
+          "name": "start",
+          "title": "as in §3.4",
+          "presence": "optional"
+        },
+        {
+          "name": "end",
+          "title": "as in §3.4",
+          "presence": "optional"
+        },
+        {
+          "name": "allDay",
+          "title": "as in §3.4",
+          "presence": "optional"
+        },
+        {
+          "name": "timeZone",
+          "title": "as in §3.4",
+          "presence": "optional"
+        },
+        {
+          "name": "description",
+          "title": "as in §3.4",
+          "presence": "optional"
+        },
+        {
+          "name": "place",
+          "title": "as in §3.4",
+          "presence": "optional"
+        },
+        {
+          "name": "busy",
+          "title": "as in §3.4",
+          "presence": "optional"
+        },
+        {
+          "name": "rule",
+          "title": "as in §3.4",
+          "presence": "of their capabilities"
+        },
+        {
+          "name": "attendees",
+          "title": "as in §3.4",
+          "presence": "of their capabilities"
+        },
+        {
+          "name": "notify",
+          "title": "as in §3.4",
+          "presence": "of their capabilities"
+        },
+        {
+          "name": "meeting",
+          "title": "as in §3.4",
+          "presence": "of their capabilities"
+        },
+        {
+          "name": "scope",
+          "title": "Applies to",
+          "presence": "capability `recurrence`"
+        }
+      ],
+      "calendar_cancel_event": [
+        {
+          "name": "calendar",
+          "title": "Calendar",
+          "presence": "required"
+        },
+        {
+          "name": "ref",
+          "title": "Event",
+          "presence": "required"
+        },
+        {
+          "name": "ifVersion",
+          "title": "Version read",
+          "presence": "optional"
+        },
+        {
+          "name": "notify",
+          "title": "Tell those invited",
+          "presence": "capability `attendees`"
+        },
+        {
+          "name": "comment",
+          "title": "Message",
+          "presence": "capability `attendees`"
+        },
+        {
+          "name": "scope",
+          "title": "Applies to",
+          "presence": "capability `recurrence`"
+        }
+      ],
+      "calendar_free_busy": [
+        {
+          "name": "calendar",
+          "title": "Calendar",
+          "presence": "required"
+        },
+        {
+          "name": "from",
+          "title": "From",
+          "presence": "required"
+        },
+        {
+          "name": "to",
+          "title": "To",
+          "presence": "required"
+        },
+        {
+          "name": "people",
+          "title": "People",
+          "presence": "optional"
+        }
+      ],
+      "calendar_respond": [
+        {
+          "name": "calendar",
+          "title": "Calendar",
+          "presence": "required"
+        },
+        {
+          "name": "ref",
+          "title": "Event",
+          "presence": "required"
+        },
+        {
+          "name": "response",
+          "title": "Answer",
+          "presence": "required"
+        },
+        {
+          "name": "comment",
+          "title": "Message",
+          "presence": "optional"
+        },
+        {
+          "name": "notify",
+          "title": "Tell the organizer",
+          "presence": "optional"
+        },
+        {
+          "name": "scope",
+          "title": "Applies to",
+          "presence": "capability `recurrence`"
+        }
+      ]
+    },
+    "capabilities": [
+      {
+        "name": "free-busy",
+        "tools": ["calendar_free_busy"]
+      },
+      {
+        "name": "recurrence",
+        "tools": []
+      },
+      {
+        "name": "attendees",
+        "tools": []
+      },
+      {
+        "name": "respond",
+        "tools": ["calendar_respond"]
+      },
+      {
+        "name": "meeting",
+        "tools": []
+      }
+    ],
+    "errorsInProse": {
+      "calendar_get_event": ["not-found"],
+      "calendar_create_event": ["invalid-argument", "end", "start", "not-supported", "permission-denied", "writable"],
+      "calendar_update_event": ["version-mismatch", "not-found"]
+    },
+    "requirementIds": [
+      "FEAT-CAL-001",
+      "FEAT-CAL-002",
+      "FEAT-CAL-003",
+      "FEAT-CAL-004",
+      "FEAT-CAL-005",
+      "FEAT-CAL-006",
+      "FEAT-CAL-007",
+      "FEAT-CAL-008",
+      "FEAT-CAL-009",
+      "FEAT-CAL-010",
+      "FEAT-CAL-011",
+      "FEAT-CAL-012",
+      "FEAT-CAL-013",
+      "FEAT-CAL-014",
+      "FEAT-CAL-015",
+      "FEAT-CAL-016",
+      "FEAT-CAL-017",
+      "FEAT-CAL-020",
+      "FEAT-CAL-021",
+      "FEAT-CAL-030",
+      "FEAT-CAL-031",
+      "FEAT-CAL-032",
+      "FEAT-CAL-033",
+      "FEAT-CAL-040",
+      "FEAT-CAL-041",
+      "FEAT-CAL-042",
+      "FEAT-CAL-050",
+      "FEAT-CAL-051",
+      "FEAT-CAL-060",
+      "FEAT-CAL-061"
+    ]
+  }
+}

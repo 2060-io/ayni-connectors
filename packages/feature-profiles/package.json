@@ -1,0 +1,37 @@
+{
+  "name": "@ayni.org/ayni-feature-profiles",
+  "type": "module",
+  "version": "0.1.0",
+  "main": "./build/index.js",
+  "module": "./build/index.js",
+  "types": "./build/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "default": "./build/index.js"
+    }
+  },
+  "files": [
+    "build"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "Apache-2.0",
+  "description": "The Ayni Feature Profiles 1.0 as code: Files 1.0 and Calendar 1.0, their tools, schemas, effects, errors and declarations, for MCP providers and clients",
+  "homepage": "https://github.com/2060-io/ayni-connectors/tree/main/packages/feature-profiles",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/2060-io/ayni-connectors",
+    "directory": "packages/feature-profiles"
+  },
+  "scripts": {
+    "build": "tsdown --config ./tsdown.config.ts",
+    "clean": "rimraf ./build",
+    "prepublishOnly": "pnpm run build"
+  },
+  "dependencies": {
+    "ajv": "catalog:",
+    "ajv-formats": "catalog:"
+  }
+}
