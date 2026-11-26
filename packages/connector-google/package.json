@@ -12,6 +12,9 @@
       "default": "./build/index.js"
     }
   },
+  "bin": {
+    "ayni-connector-google": "./build/cli.js"
+  },
   "files": [
     "build"
   ],
@@ -28,7 +31,8 @@
   },
   "scripts": {
     "build": "tsdown --config ./tsdown.config.ts",
-    "clean": "rimraf ./build"
+    "clean": "rimraf ./build",
+    "start": "node ./build/cli.js"
   },
   "dependencies": {
     "@ayni.org/ayni-feature-profiles": "workspace:^",
