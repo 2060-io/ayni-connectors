@@ -231,11 +231,18 @@ describe('a Nextcloud: references, roots, search, trash, versions, shares', () =
     const link = (await a.ok('files_share', { root, ref: g.ref, role: 'reader', audience: 'anyone' })).shares as Json[]
     expect(link[0]).toMatchObject({ audience: 'anyone', role: 'reader' })
     expect(String(link[0]?.link)).toMatch(/^https:\/\//)
+    // Nextcloud adds 16 to a public link of its own accord; the connector never asks for it
     expect(at(g.ref).sort()).toEqual([
-      [3, 1],
+      [3, 17],
       [4, 1],
     ])
-    expect(s.stub.store.shares.every((x) => !(x.permissions & 16))).toBe(true)
+    expect(s.stub.store.shares.filter((x) => x.type !== 3).every((x) => !(x.permissions & 16))).toBe(true)
+    const asked = s.stub.requests
+      .filter((r) => r.path === '/ocs/v2.php/apps/files_sharing/api/v1/shares' || /\/shares\/\d+$/.test(r.path))
+      .map((r) => new URLSearchParams(r.body).get('permissions'))
+      .filter((p): p is string => p !== null)
+    expect(asked.length).toBeGreaterThan(3)
+    expect(asked.every((p) => !(Number(p) & 16))).toBe(true)
     expect((await a.err('files_share', { root, ref: g.ref, role: 'reader', audience: 'organization' })).code).toBe(
       'not-supported'
     )

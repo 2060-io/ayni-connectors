@@ -232,11 +232,12 @@ export class StubOcs {
           })
       } else if (type === 3) {
         if (!this.o.publicLinks) return ocs(2, 403, [], 'Public link sharing is disabled by the administrator')
+        // Nextcloud adds the share permission to every public link itself (seen on Nextcloud 35: 1 reads 17)
         share = this.store.share({
           owner: user.id,
           node: e.node,
           type: 3,
-          permissions,
+          permissions: permissions | 16,
           note: '',
           mailSend: false,
           token: Math.random().toString(36).slice(2, 12),
