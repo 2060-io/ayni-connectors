@@ -347,7 +347,7 @@ describe('a plain CalDAV server without scheduling', () => {
   it('FEAT-CALDAV-001, 006: declares recurrence and free-busy, never attendees, respond or meeting', async () => {
     const d = (await a.declared())['org.ayni/calendar'] as Json
     expect(d.capabilities).toEqual(['free-busy', 'recurrence'])
-    expect(d.atomicWrites).toBe(true)
+    expect(d.atomicWrites).toBe(false)
     const e = await a.err('calendar_create_event', {
       calendar: '/dav/calendars/ana/personal/',
       title: 'x',

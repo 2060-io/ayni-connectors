@@ -87,7 +87,9 @@ export async function calendarFor(scope: RequestScope): Promise<Provider | undef
     const capabilities: CalendarCapability[] = ['free-busy', 'recurrence']
     if (scheduling) capabilities.push('attendees', 'respond')
     const p: Provider = {
-      declaration: { capabilities, atomicWrites: true },
+      // a CalDAV server compares If-Match and writes in two steps for all the connector can tell: Nextcloud 35 took two
+      // changes sent together with one entity tag (common §5, FEAT-CORE-011); the connector compares too, then writes
+      declaration: { capabilities, atomicWrites: false },
       calendars: (a, c) => dav.calendars(a, c),
       listEvents: (a, c) => dav.listEvents(a, c),
       getEvent: (a, c) => dav.getEvent(a, c),
