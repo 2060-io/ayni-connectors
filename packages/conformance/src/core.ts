@@ -685,6 +685,8 @@ export function secretsOf(options: { accounts: RunState['options']['accounts'] }
   for (const acc of [options.accounts.A, options.accounts.B, options.accounts.M]) {
     if (!acc) continue
     for (const v of Object.values(acc.headers)) {
+      // an address of the service is no credential: it may be in a result (a webUrl), never in an error (FEAT-CORE-007)
+      if (/^https?:\/\//i.test(v.trim())) continue
       if (v.length >= 8) out.add(v)
       const parts = v.split(/\s+/)
       const last = parts[parts.length - 1]
