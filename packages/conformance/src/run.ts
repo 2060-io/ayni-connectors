@@ -33,10 +33,13 @@ export function requirementIdsOf(profile: 'files' | 'calendar'): string[] {
 async function runOne(
   test: Test<CoreState>,
   state: CoreState,
-  declared: string[]
+  declared: string[],
+  teamDeclared: string[]
 ): Promise<{ status: Status; detail?: string; ms: number }> {
   const started = Date.now()
-  if (test.capability && !declared.includes(test.capability))
+  // team-roots is declared to an account that may make a team root (M), which may be the only one (common §3, §13)
+  const own = test.capability === 'team-roots' ? teamDeclared : declared
+  if (test.capability && !own.includes(test.capability))
     return { status: 'not-applicable', detail: `the capability ${test.capability} is not declared`, ms: 0 }
   const t = new TestContext()
   try {
@@ -70,7 +73,8 @@ async function runProfile(
   key: 'files' | 'calendar',
   declaration: Declared,
   results: RequirementResult[],
-  onResult?: (r: RequirementResult) => void
+  onResult?: (r: RequirementResult) => void,
+  managerDeclaration?: Declared
 ): Promise<void> {
   let state: CoreState
   const created = new Set<string>()
@@ -78,7 +82,14 @@ async function runProfile(
   if (key === 'files') {
     const files = base.options.files
     if (!files) return
-    state = { ...base, run: filesRun(base, declaration, files, created), made: [], files, created } as FilesState
+    state = {
+      ...base,
+      run: filesRun(base, declaration, files, created),
+      made: [],
+      files,
+      created,
+      teamDeclaration: managerDeclaration ?? declaration,
+    } as FilesState
   } else {
     const calendar = base.options.calendar
     if (!calendar) return
@@ -93,7 +104,7 @@ async function runProfile(
   const byId = new Map<string, { status: Status; detail?: string; ms: number }[]>()
   const tests = testsOf(key)
   for (const test of tests) {
-    const r = await runOne(test, state, declaration.capabilities)
+    const r = await runOne(test, state, declaration.capabilities, (managerDeclaration ?? declaration).capabilities)
     const list = byId.get(test.id) ?? []
     list.push(r)
     byId.set(test.id, list)
@@ -141,6 +152,7 @@ export async function runConformance(options: ConformanceOptions): Promise<Confo
   const declarations: Record<string, unknown> = {}
   try {
     const extensions = await A.extensions()
+    const managerExtensions = M ? await M.extensions() : undefined
     for (const [key, profile] of [
       ['files', FILES_PROFILE],
       ['calendar', CALENDAR_PROFILE],
@@ -162,7 +174,15 @@ export async function runConformance(options: ConformanceOptions): Promise<Confo
       }
       declarations[profile.id] = declaration
       observer.declarations[profile.id] = declaration
-      await runProfile(base, profile, key, declaration, results, options.onResult)
+      await runProfile(
+        base,
+        profile,
+        key,
+        declaration,
+        results,
+        options.onResult,
+        managerExtensions?.[profile.id] as Declared | undefined
+      )
     }
   } finally {
     await A.close()

@@ -15,6 +15,11 @@ export interface FilesState extends CoreState {
   created: Set<string>
   /** the team root M makes for the tests of `team-roots` */
   teamRoot?: string
+  /**
+   * What the server declares to M, who makes team roots: a server may declare `team-roots` to an account that may
+   * make one alone (common §3), such as a Nextcloud's managing account (providers §5.1); A's declaration otherwise.
+   */
+  teamDeclaration: Declared
 }
 
 const has = (s: FilesState, c: string) => s.run.declaration.capabilities.includes(c)
@@ -1239,7 +1244,7 @@ function teamRootTests(): Test<FilesState>[] {
       id: 'FEAT-FILES-070',
       capability: 'team-roots',
       async run(t: TestContext, s) {
-        t.ok(s.run.declaration.capabilities.includes('share'), 'team-roots declared without share')
+        t.ok(s.teamDeclaration.capabilities.includes('share'), 'team-roots declared without share')
         const M = needM(t, s)
         const ref = await make(t, s, M)
         const again = t.success(
@@ -1352,17 +1357,26 @@ function teamRootTests(): Test<FilesState>[] {
         t.success(await M.call('files_rename_root', { root, name }), "M's rename")
         const listed = (await rootsOf(t, s.A)).find((r) => r.ref === root)
         t.equal(listed?.title, name, "the title of the root in A's list after the rename")
-        t.refused(
-          await s.A.call('files_rename_root', { root, name: `${name} 2` }),
-          'permission-denied',
-          "A's rename as an editor"
-        )
-        const own = (await rootsOf(t, s.A)).find((r) => r.path === '/')
+        // an editor that is not given the tool cannot rename either: the server declares team-roots to M alone
+        const aHas = has(s, 'team-roots')
+        if (aHas)
+          t.refused(
+            await s.A.call('files_rename_root', { root, name: `${name} 2` }),
+            'permission-denied',
+            "A's rename as an editor"
+          )
+        else {
+          const tools = (await s.A.listTools()).map((x) => String(x.name))
+          t.ok(!tools.includes('files_rename_root'), 'files_rename_root listed to A, who is not declared team-roots')
+          t.note('team-roots is declared to M alone: A, an editor, is not given files_rename_root')
+        }
+        const renamer = aHas ? s.A : M
+        const own = (await rootsOf(t, renamer)).find((r) => r.path === '/')
         if (own)
           t.refused(
-            await s.A.call('files_rename_root', { root: own.ref, name: 'x' }),
+            await renamer.call('files_rename_root', { root: own.ref, name: 'x' }),
             'not-supported',
-            "renaming A's own folder"
+            `renaming ${aHas ? 'A' : 'M'}'s own folder`
           )
       },
     },
@@ -1373,7 +1387,7 @@ function teamRootTests(): Test<FilesState>[] {
         const M = needM(t, s)
         const root = await make(t, s, M)
         const a = address(t, s, 'A')
-        const manager = (s.run.declaration['team-roots'] as Json | undefined)?.manager === true
+        const manager = (s.teamDeclaration['team-roots'] as Json | undefined)?.manager === true
         const out = await M.call('files_share', { root, ref: root, role: 'manager', recipients: [{ address: a }] })
         if (!manager) {
           t.refused(out, 'not-supported', 'role manager where the server declares manager false')
