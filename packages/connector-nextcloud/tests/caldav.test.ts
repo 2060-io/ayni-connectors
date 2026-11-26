@@ -168,7 +168,7 @@ describe('a Nextcloud with scheduling', () => {
     expect(s.stub.requests.filter((r) => r.method === 'REPORT').every((r) => !r.body.includes('expand'))).toBe(true)
   })
 
-  it('FEAT-CALDAV-006: the server sends the invitation; notify false sends nothing (SCHEDULE-AGENT=NONE)', async () => {
+  it('FEAT-CALDAV-006: the server sends the invitation; notify false sends nothing (SCHEDULE-AGENT=CLIENT)', async () => {
     const before = s.stub.messagesTo('jonas@example.org').length
     const sent = (
       await a.ok('calendar_create_event', {
@@ -197,8 +197,38 @@ describe('a Nextcloud with scheduling', () => {
       attendees: [{ address: 'jonas@example.org' }],
       notify: false,
     })
-    expect(lastPut().body).toContain('SCHEDULE-AGENT=NONE')
+    expect(lastPut().body).toContain('SCHEDULE-AGENT=CLIENT')
     expect(s.stub.messagesTo('jonas@example.org').length).toBe(quiet)
+  })
+
+  it('notify false on a change leaves those the server invited to it: a CLIENT for them would cancel', async () => {
+    const e = (
+      await a.ok('calendar_create_event', {
+        calendar: first,
+        title: 'Kept invited',
+        start: '2027-01-22T09:00:00Z',
+        end: '2027-01-22T10:00:00Z',
+        attendees: [{ address: 'jonas@example.org' }],
+      })
+    ).event as Json
+    const before = s.stub.messagesTo('jonas@example.org').length
+    await a.ok('calendar_update_event', {
+      calendar: first,
+      ref: e.ref,
+      attendees: [{ address: 'jonas@example.org' }, { address: 'ayni-manager@example.org' }],
+      notify: false,
+    })
+    const body = lastPut().body.replace(/\r\n[ \t]/g, '')
+    expect(body).toMatch(/ATTENDEE[^\r\n]*:mailto:jonas@example.org/)
+    expect(body).not.toMatch(/ATTENDEE[^\r\n]*SCHEDULE-AGENT=CLIENT[^\r\n]*:mailto:jonas@example.org/)
+    expect(body).toMatch(/ATTENDEE[^\r\n]*SCHEDULE-AGENT=CLIENT[^\r\n]*:mailto:ayni-manager@example.org/)
+    expect(
+      s.stub
+        .messagesTo('jonas@example.org')
+        .slice(before)
+        .map((m) => m.subject)
+    ).not.toContain('Cancelled: Kept invited')
+    expect(s.stub.messagesTo('ayni-manager@example.org').some((m) => m.subject.includes('Kept invited'))).toBe(false)
   })
 
   it('answers an invitation: the organizer is told, but not with notify false (Schedule-Reply: F); a comment is refused', async () => {

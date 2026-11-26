@@ -458,13 +458,14 @@ export class StubCalDav {
 
   // ---- scheduling (RFC 6638 §3.2) -----------------------------------------------------------------------------
 
+  /** The attendees the server schedules: as Sabre reads it, every one but SCHEDULE-AGENT=CLIENT (NONE included). */
   private attendeesOf(vcal: Component | undefined): Map<string, Property> {
     const out = new Map<string, Property>()
     for (const e of vcal?.components.filter((c) => c.name === 'VEVENT') ?? [])
       for (const a of getProps(e, 'ATTENDEE')) {
         const addr = address(a)
         const agent = (paramOf(a, 'SCHEDULE-AGENT') ?? 'SERVER').toUpperCase()
-        if (addr && agent === 'SERVER') out.set(addr, a)
+        if (addr && agent !== 'CLIENT') out.set(addr, a)
       }
     return out
   }
