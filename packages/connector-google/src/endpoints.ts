@@ -1,9 +1,9 @@
 /**
  * Where the connector sends a person's token: Google's generally available interfaces, and no other host
- * (TOOL-OAUTH-018, FEAT-CORE-021). The three base addresses are fixed; a test may give others (a stub of its own) only
- * through `testEndpoints` of `createGoogleConnector`, which the command line and the image never set. Any base address
- * that is not one of Google's is refused when the connector starts, so that no configuration of a deployment can
- * point a token elsewhere.
+ * (TOOL-OAUTH-018, FEAT-CORE-021). The three base addresses are fixed. A test may give others, a stub of its own, only
+ * through `testEndpoints` of `createGoogleConnector`, which the command line and the image never set, and only on a
+ * loopback address (`127.0.0.1`, `::1`, `localhost`): a base address that is neither Google's nor a local stub's is
+ * refused when the connector is made, so that no configuration can point a token at another host.
  */
 
 export interface GoogleEndpoints {
@@ -54,19 +54,35 @@ export function isGoogleEndpoint(api: keyof GoogleEndpoints, base: string): bool
   )
 }
 
+/** Whether a base address is a stub's of a test: `http` or `https` on a loopback address of this machine. */
+export function isLoopbackEndpoint(base: string): boolean {
+  let url: URL
+  try {
+    url = new URL(base)
+  } catch {
+    return false
+  }
+  return (
+    (url.protocol === 'http:' || url.protocol === 'https:') &&
+    ['127.0.0.1', '[::1]', 'localhost'].includes(url.hostname) &&
+    url.username === '' &&
+    url.password === ''
+  )
+}
+
 /**
- * The base addresses the connector uses: Google's, unless a test gives its own with `allowAny`. Throws when an address
- * given without `allowAny` is not Google's, so that a misconfigured deployment does not start.
+ * The base addresses the connector uses: Google's, unless a test gives a stub's (`forTest`), which must then be on a
+ * loopback address. Throws for any other, so that a misconfigured connector does not start.
  */
-export function resolveEndpoints(given: Partial<GoogleEndpoints> | undefined, allowAny: boolean): GoogleEndpoints {
+export function resolveEndpoints(given: Partial<GoogleEndpoints> | undefined, forTest: boolean): GoogleEndpoints {
   const out: GoogleEndpoints = { ...GOOGLE_ENDPOINTS }
   for (const api of ['drive', 'upload', 'calendar'] as const) {
     const base = given?.[api]
     if (base === undefined) continue
-    if (!allowAny && !isGoogleEndpoint(api, base))
-      throw new Error(`the ${api} endpoint must be ${GOOGLE_ENDPOINTS[api]}: the connector sends tokens to Google only`)
-    if (allowAny && !/^https?:\/\//.test(base))
-      throw new Error(`the ${api} endpoint of a test is not an http(s) address`)
+    if (!isGoogleEndpoint(api, base) && !(forTest && isLoopbackEndpoint(base)))
+      throw new Error(
+        `the ${api} endpoint must be ${GOOGLE_ENDPOINTS[api]}, or a test's stub on a loopback address: the connector sends tokens to Google only`
+      )
     out[api] = base.replace(/\/$/, '')
   }
   return out

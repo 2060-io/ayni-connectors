@@ -29,6 +29,7 @@ export {
   GOOGLE_ENDPOINTS,
   type GoogleEndpoints,
   isGoogleEndpoint,
+  isLoopbackEndpoint,
 } from './endpoints.js'
 export { GoogleError, profileErrorOf } from './google.js'
 export { isLogLevel, jsonLogger, type LogLevel } from './log.js'
@@ -49,8 +50,9 @@ export interface GoogleConnectorOptions {
   /** the fetch the connector reaches Google with; the runtime's when absent */
   fetch?: typeof fetch
   /**
-   * For tests only: the base addresses of a stub of Google's interfaces. The command line and the image never set it;
-   * without it, the connector reaches `https://www.googleapis.com` and nothing else.
+   * For tests only: the base addresses of a stub of Google's interfaces, on a loopback address (any other host is
+   * refused). The command line and the image never set it; without it, the connector reaches
+   * `https://www.googleapis.com` and nothing else.
    */
   testEndpoints?: Partial<GoogleEndpoints>
   /** serve Files over Drive (true when absent) */
