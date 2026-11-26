@@ -57,11 +57,19 @@ export async function calendarFor(scope: RequestScope): Promise<Provider | undef
       probe = target.address
       find = (signal) => discoverCaldav(http, target.address, signal)
     }
+    let found: Promise<CalendarAccount> | undefined
     const options = await http.send({ method: 'OPTIONS', url: probe })
     if (options.status === 401) throw statusError(options)
-    const features = davFeatures(options.headers.dav)
+    let features = davFeatures(options.headers.dav)
+    if (!features.has('calendar-access')) {
+      // an address that is not of the calendars (a server's root): what the server announces is read at the home
+      found = find()
+      const home = (await found).home
+      const again = await http.send({ method: 'OPTIONS', url: home })
+      if (again.status === 401) throw statusError(again)
+      features = davFeatures(again.headers.dav)
+    }
     const scheduling = features.has('calendar-auto-schedule')
-    let found: Promise<CalendarAccount> | undefined
     const dav = new CalDav({
       http,
       account: (signal) => {

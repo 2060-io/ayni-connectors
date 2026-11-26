@@ -182,16 +182,22 @@ export async function accountOfPrincipal(
  * or at the address, then its `calendar-home-set`.
  */
 export async function discoverCaldav(http: HttpClient, address: URL, signal?: AbortSignal): Promise<CalendarAccount> {
-  const here = await propfind(
-    http,
-    address,
-    '1',
-    [
-      [NS.D, 'resourcetype'],
-      [NS.D, 'current-user-principal'],
-    ],
-    signal
-  )
+  let here: DavResource[] = []
+  try {
+    here = await propfind(
+      http,
+      address,
+      '1',
+      [
+        [NS.D, 'resourcetype'],
+        [NS.D, 'current-user-principal'],
+      ],
+      signal
+    )
+  } catch (e) {
+    // an address that is no collection of the server (its root, say): the well-known address is asked next
+    if ((e as { code?: string }).code === 'account-refused') throw e
+  }
   const self = here.find((r) => partsBelow(r.href, address)?.length === 0)
   const principalAt = (r: DavResource | undefined, base: URL) => {
     const h = r ? hrefsOf(r, NS.D, 'current-user-principal')[0] : undefined
