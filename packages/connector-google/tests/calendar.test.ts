@@ -4,7 +4,7 @@
  * cancellation's comment, a series moved through one of its occurrences, a description kept as HTML.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { connect, type Json, type TestClient } from './client.js'
+import { connect, type Json, rawCall, type TestClient } from './client.js'
 import { type Started, startRun } from './setup.js'
 import { SCOPE } from './stub/index.js'
 
@@ -28,19 +28,22 @@ afterAll(async () => {
 const event = (o: Json) => o.event as Json & { ref: string; version: string }
 
 describe('scopes of the agent’s table', () => {
-  it('runs each tool with the one scope the table gives it, and refuses without it', async () => {
-    const only = async (scope: string) => connect(s.connector.url, s.stub.token('avery', [SCOPE(scope)]))
+  it('runs each tool with the one scope the table gives it, and answers 403 insufficient_scope without it', async () => {
+    const tokenOf = (scope: string) => s.stub.token('avery', [SCOPE(scope)])
+    const only = async (scope: string) => connect(s.connector.url, tokenOf(scope))
+    /** a call refused at Google for a missing scope: 403 with the scope of the tool */
+    const refused = async (scope: string, tool: string, args: Json, needs: string) => {
+      const out = await rawCall(s.connector.url, tokenOf(scope), tool, args)
+      expect([out.status, out.challenge]).toEqual([403, expect.stringContaining(`scope="${SCOPE(needs)}"`)])
+    }
     const list = await only('calendar.calendarlist.readonly')
     await list.ok('calendar_calendars', {})
-    expect(
-      (
-        await list.err('calendar_list_events', {
-          calendar: A,
-          from: '2027-01-01T00:00:00Z',
-          to: '2027-01-02T00:00:00Z',
-        })
-      ).code
-    ).toBe('permission-denied')
+    await refused(
+      'calendar.calendarlist.readonly',
+      'calendar_list_events',
+      { calendar: A, from: '2027-01-01T00:00:00Z', to: '2027-01-02T00:00:00Z' },
+      'calendar.events.readonly'
+    )
     const write = await only('calendar.events')
     const made = event(
       await write.ok('calendar_create_event', {
@@ -52,11 +55,16 @@ describe('scopes of the agent’s table', () => {
     )
     await write.ok('calendar_update_event', { calendar: A, ref: made.ref, title: 'Scoped 2' })
     // the calendar list is not among what calendar.events reaches: creating an event never reads it
-    expect((await write.err('calendar_calendars', {})).code).toBe('permission-denied')
+    await refused('calendar.events', 'calendar_calendars', {}, 'calendar.calendarlist.readonly')
     const read = await only('calendar.events.readonly')
     await read.ok('calendar_list_events', { calendar: A, from: '2027-04-01T00:00:00Z', to: '2027-04-02T00:00:00Z' })
     await read.ok('calendar_get_event', { calendar: A, ref: made.ref })
-    expect((await read.err('calendar_cancel_event', { calendar: A, ref: made.ref })).code).toBe('permission-denied')
+    await refused(
+      'calendar.events.readonly',
+      'calendar_cancel_event',
+      { calendar: A, ref: made.ref },
+      'calendar.events'
+    )
     const busy = await only('calendar.events.freebusy')
     const fb = await busy.ok('calendar_free_busy', {
       calendar: A,
@@ -68,7 +76,12 @@ describe('scopes of the agent’s table', () => {
       { start: '2027-04-01T10:00:00Z', end: '2027-04-01T11:00:00Z' },
     ])
     expect((fb.people as { known: boolean }[])[0]?.known).toBe(true)
-    expect((await busy.err('calendar_get_event', { calendar: A, ref: made.ref })).code).toBe('permission-denied')
+    await refused(
+      'calendar.events.freebusy',
+      'calendar_get_event',
+      { calendar: A, ref: made.ref },
+      'calendar.events.readonly'
+    )
     await write.ok('calendar_cancel_event', { calendar: A, ref: made.ref })
     // an answer to an invitation, with calendar.events
     const inv = event(

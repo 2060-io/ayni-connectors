@@ -52,3 +52,37 @@ export async function connect(url: string, token: string): Promise<TestClient> {
     close: () => client.close(),
   }
 }
+
+/**
+ * One `tools/call` as a bare request of the 2025 era, as the Ayni Agent's client sends it: the HTTP status, the
+ * challenge of `WWW-Authenticate`, and the tool's structured content when the answer is a result.
+ */
+export async function rawCall(
+  url: string,
+  token: string,
+  name: string,
+  args: Json
+): Promise<{ status: number; challenge: string | null; content?: Json }> {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${token}`,
+      'content-type': 'application/json',
+      accept: 'application/json, text/event-stream',
+      'mcp-protocol-version': '2025-11-25',
+    },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } }),
+  })
+  const text = await res.text()
+  const data = text
+    .split('\n')
+    .filter((l) => l.startsWith('data:'))
+    .map((l) => l.slice(5).trim())
+    .join('')
+  const message = data ? (JSON.parse(data) as { result?: { structuredContent?: Json } }) : undefined
+  return {
+    status: res.status,
+    challenge: res.headers.get('www-authenticate'),
+    ...(message?.result?.structuredContent ? { content: message.result.structuredContent } : {}),
+  }
+}

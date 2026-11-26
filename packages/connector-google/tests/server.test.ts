@@ -13,7 +13,7 @@ import {
   isLoopbackEndpoint,
   startGoogleConnector,
 } from '../src/index.js'
-import { connect } from './client.js'
+import { connect, rawCall } from './client.js'
 import { capture, type Started, startRun } from './setup.js'
 
 describe('Protected Resource Metadata and the 401', () => {
@@ -49,12 +49,30 @@ describe('Protected Resource Metadata and the 401', () => {
     expect((await fetch(new URL('/healthz', s.connector.url))).status).toBe(200)
   })
 
-  it('answers account-refused when Google refuses the token, and never names it', async () => {
+  it('answers 401 with invalid_token when Google refuses the token, so that the client refreshes it', async () => {
+    const out = await rawCall(s.connector.url, 'ya29.not-a-token-of-the-stub', 'files_roots', {})
+    expect(out.status).toBe(401)
+    expect(out.challenge).toBe(
+      `Bearer error="invalid_token", error_description="Google refuses the access token", resource_metadata="${new URL('/.well-known/oauth-protected-resource/mcp', s.connector.url)}"`
+    )
     const c = await connect(s.connector.url, 'ya29.not-a-token-of-the-stub')
-    const e = await c.err('files_roots', {})
-    expect(e.code).toBe('account-refused')
-    expect(JSON.stringify(e)).not.toContain('not-a-token-of-the-stub')
+    await expect(c.call('calendar_calendars', {})).rejects.toThrow()
     await c.close()
+  })
+
+  it('answers 403 with insufficient_scope and the scopes of the tool, for a token without them', async () => {
+    const token = s.stub.token('avery', ['https://www.googleapis.com/auth/drive.readonly'])
+    const out = await rawCall(s.connector.url, token, 'files_create_folder', { root: 'root', name: 'x' })
+    expect(out.status).toBe(403)
+    expect(out.challenge).toBe(
+      `Bearer error="insufficient_scope", scope="https://www.googleapis.com/auth/drive", resource_metadata="${new URL('/.well-known/oauth-protected-resource/mcp', s.connector.url)}"`
+    )
+    // every other refusal stays a tool result
+    const missing = await rawCall(s.connector.url, token, 'files_get', { root: 'root', ref: 'no-such-file' })
+    expect([missing.status, (missing.content?.error as { code?: string } | undefined)?.code]).toEqual([
+      200,
+      'not-found',
+    ])
   })
 
   it('sends each token to the stub alone, for its own account, and logs none of them', async () => {
@@ -70,10 +88,9 @@ describe('Protected Resource Metadata and the 401', () => {
     const base = new URL(s.stub.base).origin
     for (const r of s.sent) {
       expect(new URL(r.url).origin).toBe(base)
-      // each request carries the token of the call that made it, and nothing else of an account
-      expect([`Bearer ${s.tokens.A}`, `Bearer ${s.tokens.B}`, 'Bearer ya29.not-a-token-of-the-stub']).toContain(
-        r.authorization
-      )
+      // each request carries a token a test gave the connector, as a bearer token, and nothing else of an account
+      const token = /^Bearer (\S+)$/.exec(r.authorization ?? '')?.[1] ?? ''
+      expect(s.stub.issued(token) || token === 'ya29.not-a-token-of-the-stub').toBe(true)
     }
     const log = s.logs.join('\n')
     for (const t of Object.values(s.tokens)) expect(log).not.toContain(t)

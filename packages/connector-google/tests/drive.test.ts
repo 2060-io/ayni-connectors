@@ -4,7 +4,7 @@
  * shared drives' members, and what the connector reads of a large file.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { connect, type TestClient } from './client.js'
+import { connect, rawCall, type TestClient } from './client.js'
 import { type Started, startRun } from './setup.js'
 import { SCOPE } from './stub/index.js'
 
@@ -23,8 +23,9 @@ afterAll(async () => {
 })
 
 describe('scopes', () => {
-  it('reads with drive.readonly alone, and a write without drive answers permission-denied', async () => {
-    const readOnly = await connect(s.connector.url, s.stub.token('avery', [SCOPE('drive.readonly')]))
+  it('reads with drive.readonly alone, and a write without drive answers 403 insufficient_scope', async () => {
+    const readOnlyToken = s.stub.token('avery', [SCOPE('drive.readonly')])
+    const readOnly = await connect(s.connector.url, readOnlyToken)
     const f = s.stub.drive.seedFile(first, 'kiwi notes.txt', 'a kiwi', 'avery')
     await readOnly.ok('files_roots', {})
     await readOnly.ok('files_roots', { query: '/Wo' })
@@ -32,11 +33,18 @@ describe('scopes', () => {
     await readOnly.ok('files_get', { root: first, ref: f })
     await readOnly.ok('files_read', { root: first, ref: f })
     await readOnly.ok('files_search', { root: first, query: 'kiwi' })
-    const e = await readOnly.err('files_create', { root: first, name: 'x.txt', content: { text: 'x' } })
-    expect(e.code).toBe('permission-denied')
-    expect(String(e.message)).toMatch(/access token/)
+    const e = await rawCall(s.connector.url, readOnlyToken, 'files_create', {
+      root: first,
+      name: 'x.txt',
+      content: { text: 'x' },
+    })
+    expect([e.status, e.challenge]).toEqual([
+      403,
+      expect.stringContaining('scope="https://www.googleapis.com/auth/drive"'),
+    ])
     const r = await readOnly.err('files_replace', { root: first, ref: f, ifVersion: 'v', content: { text: 'x' } })
-    expect(['permission-denied', 'version-mismatch']).toContain(r.code)
+    // compared before Google is asked: a version that is not the file's changes nothing
+    expect(r.code).toBe('version-mismatch')
     await readOnly.close()
   })
 
@@ -48,10 +56,12 @@ describe('scopes', () => {
     await write.close()
   })
 
-  it('answers permission-denied to a token with no scope of Drive', async () => {
-    const calendarOnly = await connect(s.connector.url, s.stub.token('avery', [SCOPE('calendar.events')]))
-    expect((await calendarOnly.err('files_roots', {})).code).toBe('permission-denied')
-    await calendarOnly.close()
+  it('answers 403 insufficient_scope to a token with no scope of Drive', async () => {
+    const out = await rawCall(s.connector.url, s.stub.token('avery', [SCOPE('calendar.events')]), 'files_roots', {})
+    expect([out.status, out.challenge]).toEqual([
+      403,
+      expect.stringContaining('scope="https://www.googleapis.com/auth/drive.readonly"'),
+    ])
   })
 })
 

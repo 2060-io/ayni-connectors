@@ -105,6 +105,11 @@ export class GoogleStub {
     return token
   }
 
+  /** Whether the stub issued a token. */
+  public issued(token: string): boolean {
+    return this.tokens.has(token)
+  }
+
   /** The next `count` requests answer 429, with `Retry-After` when given. */
   public limitNext(count: number, retryAfter?: number): void {
     this.rateLimited = { count, ...(retryAfter !== undefined ? { retryAfter } : {}) }
