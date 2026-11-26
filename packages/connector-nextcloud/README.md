@@ -333,17 +333,35 @@ container, never in `pnpm test`:
 
 ```bash
 pnpm build
-node packages/connector-nextcloud/scripts/nextcloud-local.mjs --json /tmp/report.json
+node packages/connector-nextcloud/scripts/nextcloud-local.mjs [--plain] [--calendar-messages] [--json /tmp/report.json]
 ```
 
-It needs Docker running and nothing else: it starts `nextcloud:35.0.3` (SQLite) and `axllent/mailpit` in a network of
-their own, HTTPS made inside the container on a loopback port, installs the Team folders app from the app store, makes
+It needs Docker running and nothing else: it starts `nextcloud:35.0.3` on `postgres:16-alpine` (SQLite refuses the
+kit's concurrent writes with `database is locked`) and `axllent/mailpit` in a network of their own, HTTPS made inside
+the container on a loopback port, installs the Team folders app from the app store, makes
 the accounts `ana`, `jonas` and `ayni-manager` (in `admin`) with passwords made in the process and written nowhere,
 the two locations of each profile (`/Conformance`, and Jonas's `Shared with Ana` shared to read; Ana's `personal`
 calendar in `Europe/Paris`, and Jonas's `Team Alpha` shared to read), a floating event and an event with a
 `CONFERENCE`; runs the kit for Files (with Mailpit's messages) and Calendar; prints the totals and every result that
-is not a pass; and removes the containers, their volumes and the network, whatever happens. `NEXTCLOUD_IMAGE` and
-`MAILPIT_IMAGE` change the images.
+is not a pass; and removes the containers, their volumes and the network, whatever happens. `--plain` runs the kit
+again through the plain path against the same server (its WebDAV by `Ayni-Dav-Files`, its CalDAV found from its root
+by `Ayni-Dav-Calendars`); `--calendar-messages` runs Calendar with Mailpit's messages, where FEAT-CAL-042 fails by
+design (the connector refuses a cancellation's comment). `NEXTCLOUD_IMAGE`, `POSTGRES_IMAGE` and `MAILPIT_IMAGE`
+change the images. A run takes some two hours on a laptop.
+
+Its last run, Nextcloud 35.0.3 with Team folders 23.0.2, on 2026-11-26:
+
+| Run | Pass | Fail | Skip | Not applicable |
+|---|---|---|---|---|
+| Nextcloud, Files, with messages (team-roots with the managing account) | 62 | 1 (FEAT-FILES-014) | 2 | 2 |
+| Nextcloud, Calendar | 51 | 0 | 0 | 5 |
+| plain path, Files | 44 | 1 (FEAT-FILES-014) | 2 | 20 |
+| plain path, Calendar, found from the server's root | 50 | 0 | 1 (no fixture `conference`) | 5 |
+| Nextcloud, Calendar, with messages | 49 | 1 (FEAT-CAL-042, by design) | 1 (no fixture `conference`) | 5 |
+
+The runs before it found what the stub had not, now in the connector and the stub: the `423` of concurrent writes,
+the `412` of a restore with `Overwrite: F`, the CalDAV that does not compare and write in one step, the `NONE` that
+Sabre schedules, the password confirmation an app password lacks, the permission 16 of public links.
 
 Against any other server (Stalwart for the plain path, or a Nextcloud of a test organization), a `run.json` for
 `npx @ayni.org/ayni-conformance --config run.json`:
