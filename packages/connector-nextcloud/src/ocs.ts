@@ -77,6 +77,11 @@ export function ocsOk(a: OcsAnswer): boolean {
 /** The error of an OCS answer that is not a success, as the profiles name it. */
 export function ocsError(a: OcsAnswer): ProfileError {
   const code = a.status >= 300 ? a.status : a.statuscode
+  // a call Nextcloud marks as needing the password confirmed, made with an app password (seen on Nextcloud 35)
+  if (/password confirmation/i.test(a.message))
+    return errors.permissionDenied(
+      'The server asks for the account’s password to be confirmed: sign the account in with its login password, not an app password, or let its administrator list the connector’s addresses in allowed_no_password_confirmation_ranges.'
+    )
   if (code === 401 || code === 997) return errors.accountRefused('The server refuses the account of the request.')
   if (code === 403 || code === 104) return errors.permissionDenied('The server does not let the account do this.')
   if (code === 404 || code === 998) return errors.notFound()
