@@ -185,6 +185,20 @@ describe('a Nextcloud: references, roots, search, trash, versions, shares', () =
     expect((await a.err('files_read', { root, ref: f.ref, version: '123' })).code).toBe('not-found')
   })
 
+  it('a write while the server holds the file’s lock waits for it, then the precondition decides (423, Nextcloud 35)', async () => {
+    const f = (await a.ok('files_create', { root, name: 'locked.txt', content: { text: 'a' } })).item as Json
+    s.stub.lockedWrites = 2
+    const after = (await a.ok('files_replace', { root, ref: f.ref, ifVersion: f.version, content: { text: 'b' } }))
+      .item as Json
+    expect(after.version).not.toBe(f.version)
+    expect(s.stub.lockedWrites).toBe(0)
+    // the lock is never given up: the call answers what providers §3 says of 423
+    s.stub.lockedWrites = 10
+    const e = await a.err('files_replace', { root, ref: f.ref, ifVersion: after.version, content: { text: 'c' } })
+    expect(e.code).toBe('unavailable')
+    s.stub.lockedWrites = 0
+  })
+
   it('FEAT-NC-006: reader is the permission 1, editor 3 for a file and 15 for a folder; anyone a public link', async () => {
     const f = (await a.ok('files_create', { root, name: 'shared.txt', content: { text: 's' } })).item as Json
     const folder = (await a.ok('files_create_folder', { root, name: 'Shared folder' })).item as Json

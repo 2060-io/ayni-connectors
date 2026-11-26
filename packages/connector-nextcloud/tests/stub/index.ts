@@ -52,6 +52,8 @@ export class DavStub {
   public available = true
   /** a path whose request is answered with a redirection to an address elsewhere */
   public redirects = new Map<string, string>()
+  /** the next writes of files answered `423 Locked`, as Nextcloud answers a write of a file another one holds */
+  public lockedWrites = 0
   public readonly pki: TestPki
   public readonly o: Required<Omit<StubOptions, 'pki'>>
   private server?: Server
@@ -183,6 +185,10 @@ export class DavStub {
       .map((p) => decodeURIComponent(p))
     if (!parts.length) return this.root(req, user)
     const [area, owner, ...below] = parts
+    if (area === 'files' && this.lockedWrites > 0 && ['PUT', 'MOVE', 'DELETE'].includes(req.method)) {
+      this.lockedWrites--
+      return davError(423, 'Locked', 'The file is locked')
+    }
     if (area === 'files' && owner === user.id) return this.files.handle(req, below)
     if (area === 'calendars' && owner === user.id) return this.cal.handle(req, user, below)
     if (this.o.nextcloud && area === 'principals' && owner === 'users' && below[0] === user.id)
