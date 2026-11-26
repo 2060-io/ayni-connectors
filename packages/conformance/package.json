@@ -1,0 +1,43 @@
+{
+  "name": "@ayni.org/ayni-conformance",
+  "type": "module",
+  "version": "0.1.0",
+  "main": "./build/index.js",
+  "module": "./build/index.js",
+  "types": "./build/index.d.ts",
+  "bin": {
+    "ayni-conformance": "./build/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "default": "./build/index.js"
+    }
+  },
+  "files": [
+    "build"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "Apache-2.0",
+  "description": "The conformance tests of the Ayni Feature Profiles (FEAT-CORE, FEAT-FILES, FEAT-CAL) as a kit any provider's author runs against their own MCP endpoint, from a test runner or a CLI",
+  "homepage": "https://github.com/2060-io/ayni-connectors/tree/main/packages/conformance",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/2060-io/ayni-connectors",
+    "directory": "packages/conformance"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsdown --config ./tsdown.config.ts",
+    "clean": "rimraf ./build",
+    "prepublishOnly": "pnpm run build"
+  },
+  "dependencies": {
+    "@ayni.org/ayni-feature-profiles": "workspace:^",
+    "@modelcontextprotocol/client": "catalog:"
+  }
+}

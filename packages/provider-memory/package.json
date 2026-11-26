@@ -1,0 +1,32 @@
+{
+  "name": "@ayni.org/ayni-provider-memory",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "main": "./build/index.js",
+  "module": "./build/index.js",
+  "types": "./build/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "default": "./build/index.js"
+    }
+  },
+  "license": "Apache-2.0",
+  "description": "An in-memory provider of Files 1.0 and Calendar 1.0 with every capability, on the provider kit: the reference the conformance kit runs against, and a fake for clients' tests",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsdown --config ./tsdown.config.ts",
+    "clean": "rimraf ./build",
+    "start": "node ./build/cli.js"
+  },
+  "dependencies": {
+    "@ayni.org/ayni-feature-profiles": "workspace:^",
+    "@ayni.org/ayni-provider-kit": "workspace:^"
+  },
+  "devDependencies": {
+    "@ayni.org/ayni-conformance": "workspace:^"
+  }
+}

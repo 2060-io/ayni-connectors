@@ -1,0 +1,45 @@
+{
+  "name": "@ayni.org/ayni-provider-kit",
+  "type": "module",
+  "version": "0.1.0",
+  "main": "./build/index.js",
+  "module": "./build/index.js",
+  "types": "./build/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "default": "./build/index.js"
+    }
+  },
+  "files": [
+    "build"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "Apache-2.0",
+  "description": "What every provider of the Ayni Feature Profiles shares: an MCP server (Streamable HTTP) that declares the profiles, registers their tools from a connector's handlers, validates arguments and results, maps errors, pages and reads the account of each request",
+  "homepage": "https://github.com/2060-io/ayni-connectors/tree/main/packages/provider-kit",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/2060-io/ayni-connectors",
+    "directory": "packages/provider-kit"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsdown --config ./tsdown.config.ts",
+    "clean": "rimraf ./build",
+    "prepublishOnly": "pnpm run build"
+  },
+  "dependencies": {
+    "@ayni.org/ayni-feature-profiles": "workspace:^",
+    "@modelcontextprotocol/node": "catalog:",
+    "@modelcontextprotocol/server": "catalog:"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "catalog:",
+    "@modelcontextprotocol/sdk": "1.32.2"
+  }
+}

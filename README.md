@@ -10,18 +10,23 @@ exchanged without the model, the rules or the words people read changing. The pr
 [`2060-io/ayni-spec`](https://github.com/2060-io/ayni-spec), directory
 [`v4/ayni-feature-profiles/`](https://github.com/2060-io/ayni-spec/tree/main/v4/ayni-feature-profiles): the common
 part (FEAT-CORE), Files 1.0 (FEAT-FILES), Calendar 1.0 (FEAT-CAL) and the first providers. The spec is the
-authority; this repository follows it.
+authority; this repository follows it, and the tests pin the code to what the spec's tables give at one commit
+([`packages/feature-profiles/spec/facts.json`](packages/feature-profiles/spec/facts.json)).
 
 ## Packages
 
-One package per directory of `packages/`, a pnpm workspace. Planned, in this order:
-
 | Package | npm | What it is |
 |---------|-----|------------|
-| `packages/feature-profiles` | `@ayni.org/ayni-feature-profiles` | the contracts as code, for a provider (server) and for a client (the Ayni Agent) alike |
-| `packages/provider-kit` | `@ayni.org/ayni-provider-kit` | what every connector shares: the MCP server, the declaration, validation, errors, pages, accounts |
-| `packages/conformance` | `@ayni.org/ayni-conformance` | the spec's *Verify* lines as a runnable test kit against any provider's MCP endpoint, with a CLI |
-| `packages/provider-memory` | private | an in-memory provider of every profile and capability: the conformance kit's reference, and a fake for clients' tests |
+| [`packages/feature-profiles`](packages/feature-profiles) | `@ayni.org/ayni-feature-profiles` | the contracts as code, for a provider (server) and for a client (the Ayni Agent) alike: tools, descriptions, titles, JSON Schemas, effects, capabilities, errors, declarations, limits, and the checks of a call |
+| [`packages/provider-kit`](packages/provider-kit) | `@ayni.org/ayni-provider-kit` | what every connector shares: the MCP server (Streamable HTTP), the declaration, validation of calls and results, errors, pages and cursors, accounts |
+| [`packages/conformance`](packages/conformance) | `@ayni.org/ayni-conformance` | the spec's *Verify* lines as a test kit against any provider's MCP endpoint, from a test runner or the CLI `ayni-conformance`, reported per requirement id |
+| [`packages/provider-memory`](packages/provider-memory) | private | an in-memory provider of Files 1.0 and Calendar 1.0 with every capability: the conformance kit's reference in CI, and a fake for clients' tests |
+
+```
+feature-profiles ◄── provider-kit ◄── provider-memory, connector-*
+        ▲
+        └──────── conformance (an MCP client; tests any provider)
+```
 
 ## Requirements
 
@@ -37,29 +42,65 @@ pnpm build          # every package, in dependency order
 pnpm check-format   # Biome
 pnpm fix-format     # Biome, writing its fixes
 pnpm check-types    # each package's build config, then the tests
-pnpm test           # vitest
+pnpm test           # vitest: the contracts pinned to the spec, the kit, and the conformance kit against the in-memory provider
 pnpm validate       # format, types, tests
 ```
+
+To try a client against a provider: `pnpm build && pnpm --filter @ayni.org/ayni-provider-memory start` serves the
+in-memory provider on `http://127.0.0.1:8000/mcp` and prints the fictional accounts' bearer tokens.
+
+To test a provider of your own: see [`packages/conformance`](packages/conformance), `npx @ayni.org/ayni-conformance
+--config run.json`.
+
+## MCP
+
+The official TypeScript SDK at the revision the spec names, **MCP 2026-07-28**: `@modelcontextprotocol/server` and
+`@modelcontextprotocol/client` 2.x. The v1.x line of `@modelcontextprotocol/sdk` implements MCP up to 2025-11-25 and
+does not plan 2026-07-28 (its README), so it cannot answer `server/discover`, where common §3 declares a profile.
+Every provider of this repository also answers the 2025-era `initialize` (the SDK's stateless serving), with the same
+declaration in `capabilities.extensions`: the Ayni Agent's client of today (`@modelcontextprotocol/sdk` 1.32) uses
+them as they are, which the kit's tests check with that client, and the conformance kit runs in both eras.
+
+## Roadmap
+
+The connectors are next, each a package of its own and an image of its own, built on the kit and passing the
+conformance kit against stub services in CI:
+
+| Package | Image | What it is | Spec |
+|---------|-------|-----------|------|
+| `packages/connector-google` | `ayni-connector-google` | Google Drive (Files) and Google Calendar (Calendar) over the Drive API v3 and the Calendar API v3, with the person's own Google access token in `Authorization`; publishes Protected Resource Metadata naming Google's authorization server. Files: `folders`, `search` (with content), `trash`, `share` (`organization`, `anyone`), `versions`, `export`, `team-roots` (shared drives, `manager: true`), `atomicWrites: false`; Calendar: every capability (Google Meet), `atomicWrites: true` | providers.md §6, the Google columns of files §6 and calendar §6 |
+| `packages/connector-nextcloud` | `ayni-connector-nextcloud` | Nextcloud over WebDAV and CalDAV and Nextcloud's own interfaces (search, trash bin, versions, the OCS Share API, Team folders), and any other WebDAV or CalDAV server with fewer operations; the account in the `Ayni-Nextcloud`, `Ayni-Dav-Files`, `Ayni-Dav-Calendars`, `Ayni-Dav-Username` and `Ayni-Dav-Password` headers (`headerAccount` of the kit) | providers.md §1 to §5, normative: FEAT-DAV, FEAT-WEBDAV, FEAT-CALDAV, FEAT-NC |
+
+Later: Microsoft 365 through Microsoft Graph (providers.md §7, not specified yet), and the providers of Mail once its
+profile is written (providers.md §8).
 
 ## Conventions
 
 Those of the organization's TypeScript template: Biome (no semicolons, single quotes, 120 columns), TypeScript in
-strict mode, vitest, Node 24. Commits follow Conventional Commits. No secret, no real person's or customer's name in
-the code, the tests or the examples: every example is fictional, and no test contacts a real service.
+strict mode, vitest, Node 24; the monorepo layout of `2060-io/credo-ts-ayni-flow` (a pnpm workspace, tsdown builds to
+`build/`). Commits follow Conventional Commits. No secret, no real person's or customer's name in the code, the tests
+or the examples: every example is fictional (`example.org`, `.invalid` hosts), and no test contacts a real service.
 
 ## CI
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) calls the organization's reusable workflow
-(`2060-io/organization`, `2060-linter-call.yml`, pinned by SHA): install, build, format, types, tests, and the
-validation of a pull request's title. Third-party actions are pinned by their full SHA.
+(`2060-io/organization`, `2060-linter-call.yml`, pinned by SHA): install, build, format, types, tests (the conformance
+kit against the in-memory provider among them), and the validation of a pull request's title. Third-party actions
+are pinned by their full SHA.
 
 ## TODO: release, publishing and images
 
 Not set up yet: each needs settings that only the repository's owner can make.
 
-- **npm releases**: release-please (a manifest, linked versions across the published packages) and a release
-  workflow that publishes with npm trusted publishing (OIDC), on the model of `2060-io/credo-ts-ayni-flow`.
-- **Docker images**: one image per connector, built and pushed by a workflow on the model of the template's `cd.yml`.
+- **npm releases** of `@ayni.org/ayni-feature-profiles`, `@ayni.org/ayni-provider-kit` and
+  `@ayni.org/ayni-conformance`: release-please (`release-please-config.json` and `.release-please-manifest.json`, one
+  entry per published package, the `linked-versions` plugin) and a `release.yml` that publishes the packages released
+  with npm trusted publishing (OIDC, `id-token: write`, `pnpm publish --provenance`), on the model of
+  `2060-io/credo-ts-ayni-flow`. `provider-memory` and the connectors stay private on npm.
+- **Docker images**: one per connector (`packages/connector-*/Dockerfile`, Node 24, `pnpm deploy --filter` of the
+  connector), built on every pull request and pushed on a release by a workflow on the model of the template's
+  `cd.yml` (`resolve-version-call`, tags `X.Y.Z`, `vX.Y`, `latest`, `dev`), gated on the repository variable
+  `CD_ENABLED`; a Helm chart per connector (named `<image>-chart`) once `2060-io/ayni-deploy` takes them.
 
 ## Licence
 
