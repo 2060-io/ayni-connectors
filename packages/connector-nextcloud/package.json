@@ -1,0 +1,45 @@
+{
+  "name": "@ayni.org/ayni-connector-nextcloud",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "main": "./build/index.js",
+  "module": "./build/index.js",
+  "types": "./build/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "default": "./build/index.js"
+    }
+  },
+  "bin": {
+    "ayni-connector-nextcloud": "./build/cli.js"
+  },
+  "files": [
+    "build"
+  ],
+  "license": "Apache-2.0",
+  "description": "The Nextcloud connector of Ayni: Files 1.0 over WebDAV and Calendar 1.0 over CalDAV, with Nextcloud's own interfaces for search, the trash bin, versions, shares and team folders, and any other WebDAV or CalDAV server with fewer operations; the account in the headers of each request, holding no account and no secret",
+  "homepage": "https://github.com/2060-io/ayni-connectors/tree/main/packages/connector-nextcloud",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/2060-io/ayni-connectors",
+    "directory": "packages/connector-nextcloud"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsdown --config ./tsdown.config.ts",
+    "clean": "rimraf ./build",
+    "start": "node ./build/cli.js"
+  },
+  "dependencies": {
+    "@ayni.org/ayni-feature-profiles": "workspace:^",
+    "@ayni.org/ayni-provider-kit": "workspace:^"
+  },
+  "devDependencies": {
+    "@ayni.org/ayni-conformance": "workspace:^",
+    "@modelcontextprotocol/client": "catalog:"
+  }
+}
