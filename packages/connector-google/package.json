@@ -1,0 +1,45 @@
+{
+  "name": "@ayni.org/ayni-connector-google",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "main": "./build/index.js",
+  "module": "./build/index.js",
+  "types": "./build/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "default": "./build/index.js"
+    }
+  },
+  "bin": {
+    "ayni-connector-google": "./build/cli.js"
+  },
+  "files": [
+    "build"
+  ],
+  "license": "Apache-2.0",
+  "description": "The Google connector of Ayni: Files 1.0 over the Google Drive API v3 and Calendar 1.0 over the Google Calendar API v3, with the person's own Google access token of each request, holding no account and no secret",
+  "homepage": "https://github.com/2060-io/ayni-connectors/tree/main/packages/connector-google",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/2060-io/ayni-connectors",
+    "directory": "packages/connector-google"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsdown --config ./tsdown.config.ts",
+    "clean": "rimraf ./build",
+    "start": "node ./build/cli.js"
+  },
+  "dependencies": {
+    "@ayni.org/ayni-feature-profiles": "workspace:^",
+    "@ayni.org/ayni-provider-kit": "workspace:^"
+  },
+  "devDependencies": {
+    "@ayni.org/ayni-conformance": "workspace:^",
+    "@modelcontextprotocol/client": "catalog:"
+  }
+}
