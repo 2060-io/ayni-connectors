@@ -330,7 +330,10 @@ export const CORE_TESTS: Test<CoreState>[] = [
       }
       const theirs = await listOf(s.B)
       const bOwn = theirs.find((l) => l.path === '/' || l.primary === true)
-      if (bOwn) t.ok(!refs.has(bOwn.ref), "A's list holds B's own location")
+      // a reference that is not portable names its place for its own account only (common §6): B's `/` is another
+      // folder than A's `/`, written the same; only a portable one can be looked for in A's list
+      if (bOwn && bOwn.portable === true) t.ok(!refs.has(bOwn.ref), "A's list holds B's own location")
+      else if (bOwn) t.note("B's own location is not portable: its reference names another place for A, not looked for")
       else t.note("B's own location was not found in B's list: its absence from A's is not tested")
     },
   },
@@ -685,6 +688,8 @@ export function secretsOf(options: { accounts: RunState['options']['accounts'] }
   for (const acc of [options.accounts.A, options.accounts.B, options.accounts.M]) {
     if (!acc) continue
     for (const v of Object.values(acc.headers)) {
+      // an address of the service is no credential: it may be in a result (a webUrl), never in an error (FEAT-CORE-007)
+      if (/^https?:\/\//i.test(v.trim())) continue
       if (v.length >= 8) out.add(v)
       const parts = v.split(/\s+/)
       const last = parts[parts.length - 1]

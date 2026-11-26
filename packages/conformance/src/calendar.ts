@@ -77,7 +77,11 @@ async function bCalendar(t: TestContext, s: CalendarState): Promise<string> {
   return String(primary.ref)
 }
 
-/** B's event that invites A, as A reads it in the first calendar: made by B with `attendees`, or the fixture. */
+/**
+ * B's event that invites A, as A reads it in the first calendar: made by B with `attendees`, or the fixture. The
+ * invitation is sent (`notify` left to its default): a CalDAV server delivers it to A's calendar only by scheduling it
+ * (RFC 6638), and `notify: false` asks it to schedule nothing (providers §4); A's messages are not counted.
+ */
 async function invitation(
   t: TestContext,
   s: CalendarState,
@@ -96,7 +100,6 @@ async function invitation(
         start: '2027-01-27T09:00:00Z',
         end: '2027-01-27T10:00:00Z',
         attendees: [{ address: a }],
-        notify: false,
         ...more,
       },
       s.B,
@@ -1049,7 +1052,6 @@ export const CALENDAR_TESTS: Test<CalendarState>[] = [
           timeZone: PARIS,
           rule: 'FREQ=WEEKLY;COUNT=3',
           attendees: [{ address: s.options.accounts.A.address }],
-          notify: false,
         },
         s.B,
         bCal

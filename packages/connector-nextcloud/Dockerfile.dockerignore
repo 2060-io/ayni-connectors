@@ -1,0 +1,9 @@
+# the build context of packages/connector-nextcloud/Dockerfile (the repository's root): sources and manifests only
+**/node_modules
+**/build
+**/coverage
+**/*.tsbuildinfo
+**/*.log
+.git
+.github
+**/.env
