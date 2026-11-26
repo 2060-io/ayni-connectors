@@ -413,6 +413,13 @@ export class StubFiles {
       if (!t) return davError(404, 'NotFound')
       const d = req.headers.destination ? new URL(req.headers.destination).pathname : ''
       if (!d.startsWith(`${base}restore/`)) return davError(502, 'BadGateway')
+      // the restore collection answers its child as there: an Overwrite F is refused (seen on Nextcloud 35)
+      if ((req.headers.overwrite ?? 'T').toUpperCase() === 'F')
+        return davError(
+          412,
+          'PreconditionFailed',
+          'The destination node already exists, and the overwrite header is set to false'
+        )
       // as Nextcloud: into the account's own folder when the folder is gone, under another name when it is taken
       let parent = this.store.resolve(user.id, t.place.slice(0, -1))
       let place = t.place

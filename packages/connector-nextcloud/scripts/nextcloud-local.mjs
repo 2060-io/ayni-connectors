@@ -293,7 +293,8 @@ async function main() {
       const res = await fetch(
         `http://127.0.0.1:${mailPort}/api/v1/search?query=${encodeURIComponent(`to:"${address}"`)}&limit=200`
       )
-      const list = (await res.json()).messages ?? []
+      // Mailpit answers the newest first; the kit counts a hook's messages in the order they came
+      const list = ((await res.json()).messages ?? []).sort((x, y) => Date.parse(x.Created) - Date.parse(y.Created))
       const out = []
       for (const m of list) {
         const full = await (await fetch(`http://127.0.0.1:${mailPort}/api/v1/message/${m.ID}`)).json()
