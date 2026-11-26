@@ -44,7 +44,7 @@ import {
   timeOf,
   xmlns,
 } from './dav.js'
-import type { DavResponse, HttpClient } from './http.js'
+import type { DavRequest, DavResponse, HttpClient } from './http.js'
 import type { NextcloudInfo } from './nextcloud.js'
 import { partsBelow, refOf, refParts, urlBelow, within } from './paths.js'
 import { childrenOf, escapeXml, textOf } from './xml.js'
@@ -450,6 +450,19 @@ export class DavFiles {
     return root
   }
 
+  /**
+   * A write, waited for while the server holds the item's lock for another request: Nextcloud answers `423 Locked`
+   * to a second write of a file being written (seen on Nextcloud 35), and the precondition then decides. Five tries
+   * within some three seconds, then the `423` is answered as providers §3 says (`unavailable`).
+   */
+  private async write(req: DavRequest, signal?: AbortSignal): Promise<DavResponse> {
+    for (let attempt = 0; ; attempt++) {
+      const res = await this.s.http.send(req, signal)
+      if (res.status !== 423 || attempt >= 5) return res
+      await new Promise((resolve) => setTimeout(resolve, 100 * 2 ** attempt))
+    }
+  }
+
   /** An answer of a write: `412` and the others of providers §3. */
   private writeError(res: DavResponse, ctx: Ctx, on412: () => Error): Error {
     if (res.status === 412) return on412()
@@ -562,7 +575,7 @@ export class DavFiles {
     const parts = [...folder.parts, args.name]
     // a server without entity tags may not compare either: it is asked first (atomicWrites false)
     if (!this.atomic && (await this.maybeAt(parts, ctx.signal))) throw errors.alreadyExists()
-    const res = await this.s.http.send(
+    const res = await this.write(
       { method: 'PUT', url: this.url(parts), headers: { 'if-none-match': '*', 'content-type': type }, body },
       ctx.signal
     )
@@ -591,7 +604,7 @@ export class DavFiles {
       'text' in args.content
         ? Buffer.from(args.content.text, 'utf8')
         : Buffer.from((args.content as { base64: string }).base64, 'base64')
-    const res = await this.s.http.send({ method: 'PUT', url: this.url(e.parts), headers, body }, ctx.signal)
+    const res = await this.write({ method: 'PUT', url: this.url(e.parts), headers, body }, ctx.signal)
     if (![200, 201, 204].includes(res.status)) {
       if (res.status === 412) throw errors.versionMismatch(await this.current(e, ctx.signal))
       throw this.writeError(res, ctx, () => errors.unavailable())
@@ -619,7 +632,7 @@ export class DavFiles {
     const root = await this.root(args.root, ctx.signal)
     const folder = await this.folderOf(root, args.folder, 'folder', ctx.signal)
     const parts = [...folder.parts, args.name]
-    const res = await this.s.http.send({ method: 'MKCOL', url: this.url(parts, true) }, ctx.signal)
+    const res = await this.write({ method: 'MKCOL', url: this.url(parts, true) }, ctx.signal)
     if (res.status !== 201) {
       if (res.status === 405) throw errors.alreadyExists()
       throw this.writeError(res, ctx, () => errors.alreadyExists())
@@ -654,7 +667,7 @@ export class DavFiles {
       } else if (this.versionOf(e) !== args.ifVersion) throw errors.versionMismatch(this.versionOf(e))
     }
     if (parts.join('/') === e.parts.join('/')) return { item: await this.answer(root, e, ctx.signal) }
-    const res = await this.s.http.send({ method: 'MOVE', url: this.url(e.parts, folder), headers }, ctx.signal)
+    const res = await this.write({ method: 'MOVE', url: this.url(e.parts, folder), headers }, ctx.signal)
     if (![201, 204].includes(res.status)) {
       if (res.status === 412) {
         const now = await this.current(e, ctx.signal).catch(() => undefined)
@@ -772,7 +785,7 @@ export class DavFiles {
       headers['if-match'] = tag
     }
     const id = this.refOf(e)
-    const res = await this.s.http.send({ method: 'DELETE', url: this.url(e.parts, isFolder(e)), headers }, ctx.signal)
+    const res = await this.write({ method: 'DELETE', url: this.url(e.parts, isFolder(e)), headers }, ctx.signal)
     if (res.status !== 204 && res.status !== 200) {
       if (res.status === 412) throw errors.versionMismatch(await this.current(e, ctx.signal))
       throw statusError(res)
