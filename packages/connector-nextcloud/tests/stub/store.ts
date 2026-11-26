@@ -12,6 +12,8 @@ export interface User {
   name: string
   password: string
   groups: Set<string>
+  /** app passwords: they sign in, but confirm no password (Nextcloud's PasswordConfirmationRequired) */
+  appPasswords: Set<string>
 }
 
 export interface Version {
@@ -150,7 +152,7 @@ export class Store {
   }
 
   public addUser(u: { id: string; email?: string; name: string; password: string; groups?: string[] }): User {
-    const user: User = { ...u, groups: new Set(u.groups ?? []) }
+    const user: User = { ...u, groups: new Set(u.groups ?? []), appPasswords: new Set() }
     for (const g of user.groups) this.groups.add(g)
     this.users.set(u.id, user)
     this.homes.set(u.id, this.node(u.id, true, u.id))

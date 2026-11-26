@@ -371,6 +371,17 @@ describe('§5.1 team folders, for the managing account', () => {
     )
   })
 
+  it('a managing account signed in with an app password: Nextcloud confirms no password, and the refusal says why', async () => {
+    const token = 'app-password-of-the-managing-account-0123456789'
+    s.stub.store.users.get('ayni-manager')?.appPasswords.add(token)
+    const app = await connect(s.connector.url, { ...headersOf(s, 'ayni-manager'), 'Ayni-Dav-Password': token })
+    const e = await app.err('files_create_team_root', { name: 'By app password', requestId: 'space-9-files' })
+    expect(e.code).toBe('permission-denied')
+    expect(String(e.message)).toContain('login password')
+    expect(s.stub.store.folders.some((f) => f.mountPoint === 'By app password')).toBe(false)
+    await app.close()
+  })
+
   it('FEAT-NC-011: one reference for every member and the managing account, kept by a rename of the mount point', async () => {
     const root = String(((await m.ok('files_roots', { query: '/Project' })).roots as Json[])[0]?.ref)
     await m.ok('files_share', { root, ref: root, role: 'editor', recipients: [{ address: 'ana@example.org' }] })

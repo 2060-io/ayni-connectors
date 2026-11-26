@@ -93,6 +93,13 @@ export class StubOcs {
     const path = req.url.pathname
     const m = req.method
     const f = form(req)
+    // the calls Nextcloud marks PasswordConfirmationRequired: an app password confirms no password (Nextcloud 35)
+    const confirming =
+      m !== 'GET' &&
+      (path === '/ocs/v1.php/cloud/groups' ||
+        /^\/ocs\/v1\.php\/cloud\/users\/[^/]+\/groups$/.test(path) ||
+        path.startsWith('/index.php/apps/groupfolders/folders'))
+    if (confirming && req.appPassword) return ocs(1, 403, [], 'Password confirmation is required')
     if (path === '/ocs/v2.php/cloud/capabilities' && m === 'GET')
       return ocs(2, 200, { capabilities: this.capabilities() })
     if (path === '/ocs/v2.php/cloud/groups/admin/subadmins' && m === 'GET')

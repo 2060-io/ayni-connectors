@@ -14,6 +14,8 @@ export interface StubRequest {
   headers: Record<string, string>
   body: Buffer
   user?: User
+  /** signed in with an app password, which confirms no password */
+  appPassword?: boolean
 }
 
 export interface StubResponse {
@@ -95,15 +97,21 @@ export function davError(status: number, exception: string, message = ''): StubR
   }
 }
 
-/** The user of a request's HTTP Basic credentials, by user id or email. */
-export function authenticate(store: Store, authorization: string | undefined): User | undefined {
+/** The user of a request's HTTP Basic credentials, by user id or email, and whether it is an app password. */
+export function authenticate(
+  store: Store,
+  authorization: string | undefined
+): { user: User; appPassword: boolean } | undefined {
   const m = authorization ? /^Basic\s+([A-Za-z0-9+/=]+)$/i.exec(authorization.trim()) : null
   if (!m?.[1]) return undefined
   const text = Buffer.from(m[1], 'base64').toString('utf8')
   const colon = text.indexOf(':')
   if (colon < 0) return undefined
   const u = store.userByLogin(text.slice(0, colon))
-  return u && u.password === text.slice(colon + 1) ? u : undefined
+  const pw = text.slice(colon + 1)
+  if (!u) return undefined
+  if (u.password === pw) return { user: u, appPassword: false }
+  return u.appPasswords.has(pw) ? { user: u, appPassword: true } : undefined
 }
 
 /** A path segment encoded as Sabre encodes an href. */

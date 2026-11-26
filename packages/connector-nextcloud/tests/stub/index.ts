@@ -164,9 +164,12 @@ export class DavStub {
     if (redirect) return { status: 302, headers: { location: redirect } }
     const dav = this.o.nextcloud ? '/remote.php/dav/' : '/dav/'
     if (path === '/.well-known/caldav') return { status: 301, headers: { location: `${this.origin()}${dav}` } }
-    const user = authenticate(this.store, req.headers.authorization)
-    if (!user) return { ...davError(401, 'NotAuthenticated'), headers: { 'www-authenticate': 'Basic realm="Stub"' } }
+    const signedIn = authenticate(this.store, req.headers.authorization)
+    if (!signedIn)
+      return { ...davError(401, 'NotAuthenticated'), headers: { 'www-authenticate': 'Basic realm="Stub"' } }
+    const user = signedIn.user
     req.user = user
+    req.appPassword = signedIn.appPassword
     if (this.o.nextcloud && (path.startsWith('/ocs/') || path.startsWith('/index.php/'))) {
       const out = this.ocs.handle(req)
       if (out) return out
